@@ -138,7 +138,7 @@ def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] 
         forwarded = request.headers.get("x-forwarded-for", "")
         return forwarded.split(",")[0].strip() or (request.client.host if request.client else "unknown")
 
-    @app.get("/")
+    @app.api_route("/", methods=["GET", "HEAD"])
     def index() -> FileResponse:
         return FileResponse(STATIC / "index.html", media_type="text/html")
 
@@ -242,7 +242,7 @@ def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] 
             raise HTTPException(404, "no report for this job yet")
         return job.report
 
-    @app.get("/healthz")
+    @app.api_route("/healthz", methods=["GET", "HEAD"])
     def health() -> dict:
         return {"ok": True}
 

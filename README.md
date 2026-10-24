@@ -4,7 +4,7 @@
 
 Built for the [Nebius x NVIDIA Global AI Hackathon](https://nebiusglobalaihackathon.devpost.com/) (Coding and Agentic Engineering track) with **NVIDIA Nemotron** models on **Nebius Token Factory** and **Tavily** web search.
 
-- **Live demo:** _(added after deployment)_
+- **Live demo:** https://revive-2qgr.onrender.com (free hosting: if it has been idle, the first load can take up to a minute)
 - **Demo video:** _(added after upload)_
 
 ![The Time Machine verifying a KMeans notebook that was saved without outputs](docs/time-machine.png)
@@ -138,7 +138,7 @@ Re-run it yourself: `python scripts/run_benchmark.py` (writes `benchmark/results
 Requirements: Python 3.10+, a [Token Factory API key](https://tokenfactory.nebius.com), optionally a [Tavily API key](https://app.tavily.com). The Time Machine downloads old Python builds and packages, so it needs internet access.
 
 ```bash
-git clone https://github.com/<you>/revive.git && cd revive
+git clone https://github.com/bhavyasharma2/revive.git && cd revive
 python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
@@ -181,7 +181,8 @@ The tests start real Jupyter kernels, create real isolated environments and (whe
 
 ## Deploy
 
-- **Hugging Face Spaces (free):** `pip install huggingface_hub`, set `HF_TOKEN`, `NEBIUS_API_KEY` and `TAVILY_API_KEY`, then run `python scripts/deploy_huggingface.py --github <repo url>`. Keys are stored as encrypted Space secrets.
+- **Render (free web service):** New → Web Service → connect this GitHub repository; Render detects the Dockerfile. Choose the Free instance type and add `NEBIUS_API_KEY` and `TAVILY_API_KEY` as environment variables. The free instance sleeps after 15 minutes without traffic and takes about a minute to wake; it has 512 MB of memory, so recorded replays are the reliable path there, and heavy live runs (especially Time Machine rebuilds) are better run locally.
+- **Hugging Face Spaces (Docker Spaces need a PRO account):** `pip install huggingface_hub`, set `HF_TOKEN`, `NEBIUS_API_KEY` and `TAVILY_API_KEY`, then run `python scripts/deploy_huggingface.py --github <repo url>`. Keys are stored as encrypted Space secrets.
 - **Any container host, including Nebius Serverless Endpoints:** `docker build -t revive .` then run it with `NEBIUS_API_KEY` and `TAVILY_API_KEY` set; it listens on `$PORT` (default 7860). The image ships with Python 3.8 and 3.10 for the Time Machine.
 
 ## Project layout

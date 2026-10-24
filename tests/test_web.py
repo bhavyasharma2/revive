@@ -267,3 +267,13 @@ def test_sample_dates_from_the_manifest_reach_the_repair(tmp_path):
         job = c.post("/api/jobs", json={"sample": "pandas_append"}).json()
         read_events(c, job["id"])
         assert seen[-1]["as_of"] is None
+
+
+def test_head_requests_for_uptime_monitors():
+    from fastapi.testclient import TestClient
+    from revive.web.app import create_app
+
+    client = TestClient(create_app())
+    for path in ("/", "/healthz"):
+        assert client.head(path).status_code == 200
+        assert client.get(path).status_code == 200
