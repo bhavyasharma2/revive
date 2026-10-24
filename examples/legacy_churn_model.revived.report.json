@@ -1,0 +1,149 @@
+{
+  "outcome": "verified",
+  "runs": true,
+  "last_error": "",
+  "installed": [],
+  "attempts": [
+    {
+      "number": 1,
+      "error": "AttributeError in cell 3: 'DataFrame' object has no attribute 'append'",
+      "search_query": "pandas DataFrame append removed in pandas 3.1.0",
+      "sources": [
+        {
+          "title": "What\u2019s new in 1.4.0 (January 22, 2022) \u2014 pandas 3.2.0.dev0 documentation",
+          "url": "https://pandas.pydata.org/docs/dev/whatsnew/v1.4.0.html",
+          "content": "`DataFrame.append()` and `Series.append()` have been deprecated and will be removed in a future version. Use `pandas.concat()` instead (GH 35407).\n\nDeprecated syntax [...] In : pd. Series([1, 2]). append(pd. Series([3, 4]))Out ::1: FutureWarning: The series.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead. 0 1 1 2 0 3 1 4dtype: int64In : df1 = pd. DataFrame(, columns = list('AB'))In : df2 = pd. DataFrame(, columns = list('AB'))In : df1. append(df2)Out ::1: FutureWarning: The series.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.  A B 0 1 2 1 3 4 0 [...] Current behavior:\n\n```\nIn : pd. Index([1, 2, 3], dtype = \"int32\")Out : Int64Index([1, 2, 3], dtype='int64')In : pd. Index([1, 2, 3], dtype = \"uint64\")Out : UInt64Index([1, 2, 3], dtype='uint64')\n```\n\nFuture behavior:\n\n```\nIn : pd. Index([1, 2, 3], dtype = \"int32\")Out : Index([1, 2, 3], dtype='int32')In : pd. Index([1, 2, 3], dtype = \"uint64\")Out : Index([1, 2, 3], dtype='uint64')\n```\n\n### Deprecated DataFrame.append and Series.append#"
+        },
+        {
+          "title": "Good alternative to Pandas .append() method, now that it has been deprecated?",
+          "url": "https://stackoverflow.com/questions/70837397/good-alternative-to-pandas-append-method-now-that-it-has-been-deprecated",
+          "content": "@zby the update to the documentation is being dealt with in this pull request: github.com/pandas-dev/pandas/pull/45587\n\n2022-02-10T12:21:28.697Z+00:00\n\n1\n\nReply\n\n   Copy link\n\nImage 15\n\njsbueno\n\njsbuenoMay 7, 2022 at 16:50\n\nThat is actually the reason they are deprecating `df.append`. Thank the Pandas maintainers for that. Still, the \"new way to do it\" should be more proeminent in their docs, for sure.\n\n2022-05-07T16:50:26.527Z+00:00\n\n3\n\nReply\n\n   Copy link\n\nImage 16\n\nstarmandeluxe [...] 12  pandas issue 35407 explains that `df.append` was deprecated because: \"Series.append and DataFrame.append [are] making an analogy to list.append, but it's a poor analogy since the behavior isn't (and can't be) in place. The data for the index and values needs to be copied to create the result.\"Paul Rougieux  \u2013Paul Rougieux 2022-02-10 12:15:59 +00:00 Commented Feb 10, 2022 at 12:15 [...] first argument must be an iterable of pandas objects, you passed an object of type \"DataFrame\". What can I do to solve this?\n\n2022-11-28T20:07:24.893Z+00:00\n\n0\n\nReply\n\n   Copy link\n\nImage 9\n\nRafael Gaitan\n\nRafael GaitanNov 29, 2022 at 20:47\n\nThe arguments are actually inside a list. So the first argument is a list of pandas objects. First item is the original df, second item is the new df generated from records.\n\n2022-11-29T20:47:42.167Z+00:00\n\n1\n\nReply\n\n   Copy link\n\nImage 10\n\nRivered"
+        },
+        {
+          "title": "Deprecate Series / DataFrame.append \u00b7 Issue #35407 \u00b7 pandas-dev/pandas \u00b7 GitHub",
+          "url": "https://github.com/pandas-dev/pandas/issues/35407",
+          "content": "Disagree. Appending a single row is useful functionality and very common. Yes, we understand its inefficient; but as TomAugspurger himself said, this is the 10th most commonly referenced page on the help, so clearly lots of people have this use case of adding a single row to the end. We can tell ourselves we're removing the method to \"encourage good design\" but people still want this functionality, so they'll just use the workaround of creating a new DataFrame with a single row and [...] More actions\n\n    Worst idea I've seen, why complicate something so easy, I think it's better to have more options/ways to do something than just one strict way. Dataframe.append() was very easy for noobies to add data to a dataframe\n\n    Reacted by johnDanger\n25. ### etale-cohomologycommentedon Oct 17, 2022\n\n    @etale-cohomology\n\n    on Oct 17, 2022\n\n    More actions\n\n    \"[...] around the 10th most visited page in our API docs\" and they go ahead and deprecate it. [...] ## Metadata\n\n## Metadata\n\n### Assignees\n\n### Labels\n\nDeprecateFunctionality to remove in pandasFunctionality to remove in pandasNeeds DiscussionRequires discussion from core team before further actionRequires discussion from core team before further action\n\nNo type\n\nNo projects\n\n### Milestone\n\n 1.4\n\nNone yet\n\nNo branches or pull requests\n\n## Issue actions\n\nYou can\u2019t perform that action at this time."
+        },
+        {
+          "title": "Need help on using .append and .concat - Python Help - Discussions on Python.org",
+          "url": "https://discuss.python.org/t/need-help-on-using-append-and-concat/31172",
+          "content": "/var/folders/7y/rvhwt04n48g8nsfq443cymkh0000gn/T/ipykernel_5081/342987204.py:11: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.\ndata = train.append(test, ignore_index = True)\nI replace .append with .concat but it throws me errors: [...] The `AttributeError` is occurring because the `DataFrame` object in `pandas` does not have an attribute named `concat`. Instead, you should use the `pd.concat()` function to concatenate DataFrames.You can replace the `.append()` method with `pd.concat()` like this:\n\n`AttributeError`\n`DataFrame`\n`pandas`\n`concat`\n`pd.concat()`\n`.append()`\n`pd.concat()`\n`data = pd.concat([train_dataset, test_dataset], ignore_index=True)`\n\nPandas docs\n\nGeeksForGeeks tutorial\n\nThank you! [...] AttributeError Traceback (most recent call last)\nCell In, line 11\n7 train.head()\n9 test['Target'] = np.nan\n---> 11 data = train.concat(test, ignore_index = True)\n13 head_of_household = data.loc[data['parentesco1'] == 1].copy()\n15 train_labels = data.loc[(data['Target'].notnull()) & (data['parentesco1'])]\nFile ~/anaconda3/lib/python3.11/site-packages/pandas/core/generic.py:5902, in NDFrame.__getattr__(self, name)\n5895 if (\n5896 name not in self._internal_names_set"
+        },
+        {
+          "title": "AttributeError: \u2018DataFrame\u2019 Object Has No Attribute \u2018Append\u2019 Solved | Built In",
+          "url": "https://builtin.com/articles/attributeerror-dataframe-object-has-no-attribute-append",
+          "content": "Now that a newer version of Pandas has been released, some of the previously deprecated functionality in older versions will no longer work. `pandas.DataFrame.append()` method has been deprecated since Pandas version 1.4.0, and the same applies for the Series API, `pandas.Series.append()`.\n\n`pandas.DataFrame.append()`\n`pandas.Series.append()`\n\n## Solving AttributeError: \u2018DataFrame\u2019 Object Has No Attribute \u2018Append\u2019 [...] As of Pandas version 2.0.0, the `append()` method has been completely removed, see issue 35407. Therefore, code referencing this method will now report the following error:\n\n`append()`\n`AttributeError: 'DataFrame' object has no attribute 'append'`\n\nIn this short tutorial, we will demonstrate how a Pandas DataFrame can be concatenated with other DataFrame, or even other Python objects, such as dictionaries, using the new, recommended syntax.\n\nMore on Pandas8 Ways to Filter Pandas DataFrame [...] In this short tutorial, we discussed how you can potentially concatenate Pandas DataFrames using the new, recommended syntax following the new major release of Pandas 2.0.\n\nNow that the `append()` method (deprecated as of v1.4.0) has been completely removed as of Pandas 2.0, the new `concat()` method should be used instead. The same applies for the Pandas Series API that no longer has the append member.\n\n`append()`\n`concat()`\n\n## Frequently Asked Questions"
+        }
+      ],
+      "explanation": "The notebook fails in cell 3 because pandas 3.1.0 removed DataFrame.append (deprecated since 1.4.0). Additionally, numpy 2.5.4 no longer provides np.float and np.int aliases (removed in numpy 1.24), and pandas 3.1.0 removed DataFrame.iteritems (deprecated since 1.5.0). The fixes replace append with pd.concat, np.float/np.int with built-in float/int, and iteritems with items.",
+      "diff": "--- cell 3 (before)\n+++ cell 3 (after)\n@@ -1,3 +1,3 @@\n late_signups = pd.DataFrame({'tenure': [2, 3], 'monthly': [99.0, 110.0], 'plan': ['pro', 'pro'], 'churn': [1, 1]})\n-df = df.append(late_signups, ignore_index=True)\n+df = pd.concat([df, late_signups], ignore_index=True)\n print(len(df))\n\n--- cell 4 (before)\n+++ cell 4 (after)\n@@ -1,2 +1,2 @@\n-ratio = df['monthly'].values.astype(np.float) / df['tenure'].values.astype(np.int)\n+ratio = df['monthly'].values.astype(float) / df['tenure'].values.astype(int)\n print(round(float(ratio.mean()), 4))\n\n--- cell 7 (before)\n+++ cell 7 (after)\n@@ -1,2 +1,2 @@\n-for name, col in df[['tenure', 'monthly']].iteritems():\n+for name, col in df[['tenure', 'monthly']].items():\n     print(name, round(col.mean(), 3))",
+      "pip_install": [],
+      "result": "applied",
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b"
+    },
+    {
+      "number": 2,
+      "error": "TypeError in cell 5: OneHotEncoder.__init__() got an unexpected keyword argument 'sparse'",
+      "search_query": "OneHotEncoder sparse keyword argument removed scikit-learn changelog",
+      "sources": [
+        {
+          "title": "Rename OneHotEncoder option sparse to sparse_output \u00b7 Issue #24265 \u00b7 scikit-learn/scikit-learn \u00b7 GitHub",
+          "url": "https://github.com/scikit-learn/scikit-learn/issues/24265",
+          "content": "We should aim to deprecate with version 1.2.0 and removing with 1.4.0. Let's see if we make it into the next release.\n\n   Reacted by Rushil Desai\n10. ### rusdescommentedon Sep 9, 2022\n\n    @rusdes\n\n    rusdes\n\n    on Sep 9, 2022\n\n    Contributor\n\n    More actions\n\n    @lorentzenchr Shouldn't it be `OneHotEncoder` instead of `OrdinalEncoder`? This comment #24145 (comment) talks about making changes to `OneHotEncoder`. [...] Closed\n\n#24412\n\nClosed\n\nRename OneHotEncoder option sparse to sparse\\_output#24265\n\n#24412\n\nCopy link\n\nLabels\n\nmodule:preprocessing\n\nMilestone\n\n1.2\n\n## Description\n\n@lorentzenchr\n\nlorentzenchr\n\nopened on Aug 25, 2022\n\nIssue body actions\n\n### Task\n\nIntroduce new parameter `sparse_output` in `OneHotEncoder` and deprecate the then old `sparse` parameter.\n\n### Background\n\nSeveral estimators have an option to return sparse output. [...] Reacted by Rushil Desai\n13. removed\n\n    help wanted\n\n    on Sep 16, 2022\n14. closed this as completedin #24412on Sep 16, 2022\n\nSign up for free to join this conversation on GitHub. Already have an account? Sign in to comment\n\n## Metadata\n\n## Metadata\n\nNo one assigned\n\n### Labels\n\nmodule:preprocessing\n\nNo type\n\nNo projects\n\n### Milestone\n\n 1.2\n\nNone yet\n\nNo branches or pull requests\n\n## Issue actions\n\nYou can\u2019t perform that action at this time."
+        },
+        {
+          "title": "OneHotEncoder \u2014 scikit-learn 1.9.1 documentation",
+          "url": "https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html",
+          "content": "sparse\\_outputbool, default=True\n        :   When `True`, it returns a SciPy sparse matrix/array in \u201cCompressed Sparse Row\u201d (CSR) format.\n\n            Added in version 1.2: `sparse` was renamed to `sparse_output`\n\n        dtypenumber type, default=np.float64\n        :   Desired dtype of output.\n\n        handle\\_unknown{\u2018error\u2019, \u2018ignore\u2019, \u2018infrequent\\_if\\_exist\u2019, \u2018warn\u2019}, default=\u2019error\u2019\n        :   Specifies the way unknown categories are handled during `transform`. [...] scikit-learn homepage scikit-learn homepage\n\n GitHub\n\n# OneHotEncoder#\n\nclass sklearn.preprocessing.OneHotEncoder(\\, categories='auto', drop=None, sparse\\_output=True, dtype= 'numpy.float64'>, handle\\_unknown='error', min\\_frequency=None, max\\_categories=None, feature\\_name\\_combiner='concat')(\n:   Encode categorical features as a one-hot numeric array. [...] If `int`, categories with a smaller cardinality will be considered infrequent.\n             If `float`, categories with a smaller cardinality than `min_frequency n_samples` will be considered infrequent.\n\n            Added in version 1.1: Read more in the User Guide."
+        },
+        {
+          "title": "sklearn.preprocessing.OneHotEncoder \u2014 scikit-learn 0.21.3 documentation",
+          "url": "https://scikit-learn.org/0.21/modules/generated/sklearn.preprocessing.OneHotEncoder.html",
+          "content": "```\n    >>> fromsklearn.preprocessing import OneHotEncoder>>> enc = OneHotEncoder(handle_unknown = 'ignore')>>> X =>>> enc. fit(X)... ... OneHotEncoder(categorical_features=None, categories=None, drop=None, dtype=<... 'numpy.float64'>, handle_unknown='ignore', n_values=None, sparse=True)\n    ``` [...] entirely.  array : `drop[i]` is the category in feature `X[:,i]` that should be dropped.  sparse : boolean, default=True  Will return sparse matrix if set True else will return an array.  dtype : number type, default=np.float  Desired dtype of output.  handle\\_unknown : \u2018error\u2019 or \u2018ignore\u2019, default=\u2019error\u2019.  Whether to raise an error or ignore if an unknown categorical feature is present during transform (default is to raise). When this parameter is set to \u2018ignore\u2019 and an unknown category is [...] values in  `X[:,i]`. Each feature value should be in `range(n_values[i])`   Deprecated since version 0.20: The `n_values` keyword was deprecated in version 0.20 and will be removed in 0.22. Use `categories` instead.  categorical\\_features : \u2018all\u2019 or array of indices or mask, default=\u2019all\u2019  Specify what features are treated as categorical.    \u2018all\u2019: All features are treated as categorical.  array of indices: Array of categorical feature indices.  mask: Array of length n\\_features and with"
+        },
+        {
+          "title": "Version 1.0 \u2014 scikit-learn 1.9.1 documentation",
+          "url": "https://scikit-learn.org/stable/whats_new/v1.0.html",
+          "content": "API Change Keyword validation has moved from `__init__` and `set_params` to `fit` for the following estimators conforming to scikit-learn\u2019s conventions: `SGDClassifier`, `SGDRegressor`, `SGDOneClassSVM`, `PassiveAggressiveClassifier`, and `PassiveAggressiveRegressor`. #20683 by Guillaume Lemaitre. [...] Feature `preprocessing.OrdinalEncoder` supports passing through missing values by default. #19069 by Thomas Fan.\n Feature `preprocessing.OneHotEncoder` now supports `handle_unknown='ignore'` and dropping categories. #19041 by Thomas Fan.\n Feature `preprocessing.PolynomialFeatures` now supports passing a tuple to `degree`, i.e. `degree=(min_degree,max_degree)`. #20250 by Christian Lorentzen.\n Efficiency `preprocessing.StandardScaler` is faster and more memory efficient. #20652 by Thomas Fan. [...] Fix `cluster.FeatureAgglomeration` does not accept a `params` kwarg in the `fit` function anymore, resulting in a more concise error message. #20899 by Adam Li.\n Fix Fixed a bug in `cluster.KMeans`, ensuring reproducibility and equivalence between sparse and dense input. #20200 by J\u00e9r\u00e9mie du Boisberranger.\n API Change `cluster.Birch` attributes, `fit_` and `partial_fit_`, are deprecated and will be removed in 1.2. #19297 by Thomas Fan."
+        },
+        {
+          "title": "The 6-Minute Guide to Scikit-learn\u2019s Version 1.0 Changes \ud83d\ude0e | by Jeff Hale | TDS Archive | Medium",
+          "url": "https://medium.com/data-science/the-6-minute-guide-to-scikit-learns-version-1-0-changes-91b739d99f71",
+          "content": "James et al. are all about splines in their recently updated machine learning touchstone An Introduction to Statistical Learning, 2nd Edition.\n\n### OneHot Encoder improvements \ud83c\udf89\n\n## Create an account to read the full story.\n\nThe author made this story available to Medium members only.  \nIf you\u2019re new to Medium, create a new account to read this story on us.\n\nContinue in app\n\nOr, continue in mobile web\n\nSign up with Google\n\nSign up with Facebook\n\nAlready have an account? Sign in\n\nJeff Hale [...] \u00b7\n\nSep 24, 2021\n\nScikit-learn has been the primary Python machine learning library for years. The move to version 1.0 doesn\u2019t bring many major breaking changes, but it does include bug fixes, few new features, some speedups, and a whole bunch of API cleanup. \ud83e\uddf9\n\nA more consistent API is wonderful for both new and existing users. In this article I\u2019ll dig into the changes so you know how to take advantage of version 1.0. \ud83c\udf89\n\nPress enter or click to view image in full size\n\ncorgi dog in the grass [...] Text to speech"
+        }
+      ],
+      "explanation": "The OneHotEncoder parameter 'sparse' was renamed to 'sparse_output' in scikit-learn 1.2 (removed in 1.4). The current version 1.9.1 only accepts 'sparse_output'.",
+      "diff": "--- cell 5 (before)\n+++ cell 5 (after)\n@@ -1,4 +1,4 @@\n-enc = OneHotEncoder(sparse=False)\n+enc = OneHotEncoder(sparse_output=False)\n plan_onehot = enc.fit_transform(df[['plan']])\n print(plan_onehot.shape)\n print(list(enc.categories_[0]))",
+      "pip_install": [],
+      "result": "applied",
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b"
+    }
+  ],
+  "comparison": {
+    "verified": true,
+    "unverifiable": false,
+    "compared": 6,
+    "match_rate": 1.0,
+    "rtol": 0.001,
+    "atol": 1e-08,
+    "summary": "verified: 6/6 cells match (0 drift, 0 changed, 0 missing)",
+    "cells": [
+      {
+        "cell_index": 1,
+        "status": "skipped",
+        "max_rel_diff": 0.0,
+        "detail": "",
+        "stored": "",
+        "fresh": ""
+      },
+      {
+        "cell_index": 2,
+        "status": "match",
+        "max_rel_diff": 0.0,
+        "detail": "",
+        "stored": "(400, 4)\n0.105",
+        "fresh": "(400, 4)\n0.105"
+      },
+      {
+        "cell_index": 3,
+        "status": "match",
+        "max_rel_diff": 0.0,
+        "detail": "",
+        "stored": "402",
+        "fresh": "402"
+      },
+      {
+        "cell_index": 4,
+        "status": "match",
+        "max_rel_diff": 0.0,
+        "detail": "",
+        "stored": "6.0916",
+        "fresh": "6.0916"
+      },
+      {
+        "cell_index": 5,
+        "status": "match",
+        "max_rel_diff": 0.0,
+        "detail": "",
+        "stored": "(402, 3)\n['basic', 'plus', 'pro']",
+        "fresh": "(402, 3)\n['basic', 'plus', 'pro']"
+      },
+      {
+        "cell_index": 6,
+        "status": "match",
+        "max_rel_diff": 0.0,
+        "detail": "",
+        "stored": "accuracy: 0.9406",
+        "fresh": "accuracy: 0.9406"
+      },
+      {
+        "cell_index": 7,
+        "status": "match",
+        "max_rel_diff": 0.0,
+        "detail": "",
+        "stored": "tenure 35.856\nmonthly 69.842",
+        "fresh": "tenure 35.856\nmonthly 69.842"
+      }
+    ]
+  }
+}

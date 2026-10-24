@@ -1,0 +1,6 @@
+# Library versions the hosted demo runs notebooks against. The benchmark
+# notebooks are broken against exactly these versions, and the recorded runs
+# in benchmark/recordings were made with them.
+numpy==2.5.4
+pandas==3.1.0
+scikit-learn==1.9.1

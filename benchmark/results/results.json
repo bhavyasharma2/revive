@@ -1,0 +1,803 @@
+[
+  {
+    "name": "numpy_type_aliases",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "3/3",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 26.1,
+    "installed": [],
+    "usage": {
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 2717,
+        "completion_tokens": 613
+      }
+    },
+    "explanations": [
+      "NumPy 2.x removed the deprecated aliases `np.float`, `np.int`, and `np.bool`. They should be replaced with Python's built-in `float`, `int`, and `bool` (or explicit NumPy dtypes like `np.float64`). The notebook uses these aliases in `.astype()` calls in cells 3, 4, and 5. Replacing them with the built-in types fixes the AttributeError and silences the deprecation warnings without changing behavior."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 3: module 'numpy' has no attribute 'float'.\n`np.float` was a deprecated alias for the builtin `float`. To avoid this error in existing code, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.\nThe aliases was originally deprecated in NumPy 1.20; for more details and guidance see the original release note at:\n    https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "numpy2_constants",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "2/2",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 33.7,
+    "installed": [],
+    "usage": {
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 2245,
+        "completion_tokens": 2026
+      }
+    },
+    "explanations": [
+      "The notebook uses NumPy attributes that were removed in NumPy 2.0: `np.NaN`, `np.Inf`, and `np.round_`. They must be replaced with their lowercase equivalents `np.nan`, `np.inf`, and `np.round` respectively."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 2: `np.NaN` was removed in the NumPy 2.0 release. Use `np.nan` instead. -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "numpy2_functions",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 2,
+    "cells_matched": "3/3",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 76.6,
+    "installed": [],
+    "usage": {
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 2,
+        "prompt_tokens": 4540,
+        "completion_tokens": 9698
+      },
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 106,
+        "completion_tokens": 349
+      }
+    },
+    "explanations": [
+      "The notebook uses several NumPy APIs that were removed in NumPy 2.0: `np.product` (replaced by `np.prod`), `np.cumproduct` (replaced by `np.cumprod`), `np.alltrue` (replaced by `np.all`), `np.trapz` (correct spelling is `np.trapz`), and `np.row_stack` (replaced by `np.vstack`). Each is updated to its current equivalent.",
+      "NumPy 2.4.0 removed `np.in1d` (replaced by `np.isin`) and `np.trapz` (replaced by `np.trapezoid`). Cell 3 fails because of `np.in1d`; cell 4 will fail because of `np.trapz`. Both are fixed by updating to the current API equivalents."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 2: module 'numpy' has no attribute 'product' -> applied",
+      "2: AttributeError in cell 3: module 'numpy' has no attribute 'in1d' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "numpy_asscalar",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "1/1",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 21.2,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 105,
+        "completion_tokens": 208
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 2023,
+        "completion_tokens": 510
+      }
+    },
+    "explanations": [
+      "np.asscalar was removed in NumPy 1.23; the deprecation warning recommended using .item() on the array to extract the scalar value."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 2: module 'numpy' has no attribute 'asscalar' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "pandas_append",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "2/2",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 32.1,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 105,
+        "completion_tokens": 164
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 2202,
+        "completion_tokens": 4248
+      }
+    },
+    "explanations": [
+      "The DataFrame.append and Series.append methods were removed in pandas 3.1.0 (deprecated since 1.4.0). The fix replaces the row-by-row DataFrame.append with list accumulation and a single DataFrame construction, and replaces Series.append with pd.concat."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 2: 'DataFrame' object has no attribute 'append' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "pandas_iteritems",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "1/1",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 23.0,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 106,
+        "completion_tokens": 232
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 2128,
+        "completion_tokens": 714
+      }
+    },
+    "explanations": [
+      "The method `DataFrame.iteritems()` was deprecated in pandas 1.5.0 and removed in pandas 2.0. The replacement is `DataFrame.items()`. The notebook's cell 3 uses the removed method, causing an AttributeError."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 3: 'DataFrame' object has no attribute 'iteritems' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "pandas_ix_lookup",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "2/2",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 60.8,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 105,
+        "completion_tokens": 147
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 2126,
+        "completion_tokens": 3924
+      }
+    },
+    "explanations": [
+      "The notebook uses pandas APIs that were removed in pandas 1.0: `.ix` (replaced by `.loc` for label indexing and `.iloc` for integer indexing) and `.lookup` (replaced by a list comprehension using `.loc` to get the diagonal values)."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 3: 'DataFrame' object has no attribute 'ix' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "pandas_mad_applymap",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 2,
+    "cells_matched": "2/2",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 44.3,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 2,
+        "prompt_tokens": 211,
+        "completion_tokens": 464
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 2,
+        "prompt_tokens": 4525,
+        "completion_tokens": 3691
+      }
+    },
+    "explanations": [
+      "The 'mad' method was deprecated and removed in pandas 2.0. The warning suggests computing mean absolute deviation via (df - df.mean()).abs().mean(). Cell 3 uses df.mad() which no longer exists. Cell 4 uses applymap which is deprecated but still works in pandas 3.1.0; since no error or warning was reported for it, we leave it unchanged per the 'do not modernise code that still works' rule.",
+      "The `applymap` method was deprecated in pandas 2.1.0 and removed in pandas 3.1.0. The replacement is `DataFrame.map`. Cell 4 fails because it uses the removed method. We replace `applymap` with `map` to fix the error while preserving the original intent."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 3: 'DataFrame' object has no attribute 'mad' -> applied",
+      "2: AttributeError in cell 4: 'DataFrame' object has no attribute 'applymap' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "pandas_io_fill",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "2/2",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 25.1,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 109,
+        "completion_tokens": 232
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 1779,
+        "completion_tokens": 1869
+      }
+    },
+    "explanations": [
+      "The `delim_whitespace` parameter was removed in pandas 3.0; the replacement is `sep=r\"\\s+\"`. Also, `fillna(method='ffill')` is deprecated and removed in pandas 3.0; the modern equivalent is the `ffill()` method."
+    ],
+    "attempt_results": [
+      "1: TypeError in cell 2: read_csv() got an unexpected keyword argument 'delim_whitespace' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "pandas_groupby_numeric",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "1/1",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 31.0,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 105,
+        "completion_tokens": 142
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 3135,
+        "completion_tokens": 1039
+      }
+    },
+    "explanations": [
+      "The error occurs because pandas 3.1.0 no longer defaults `numeric_only=True` in `GroupBy.mean()`. The DataFrame contains string columns ('region', 'rep') which cannot have a mean computed. The fix is to explicitly pass `numeric_only=True` to `mean()` so only numeric columns are aggregated, matching the original behavior."
+    ],
+    "attempt_results": [
+      "1: TypeError in cell 3: dtype 'str' does not support operation 'mean' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "pandas_dates",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 2,
+    "cells_matched": "2/2",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 50.1,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 2,
+        "prompt_tokens": 212,
+        "completion_tokens": 477
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 2,
+        "prompt_tokens": 4144,
+        "completion_tokens": 8527
+      }
+    },
+    "explanations": [
+      "The `weekofyear` attribute on `Series.dt` was deprecated in pandas 1.1.0 and removed in later versions. The warning indicates to use `Series.dt.isocalendar().week` instead. This change updates cell 3 to use the current API.",
+      "The `first` method was removed in pandas 3.0.0. Replace it with label-based slicing using `loc` and a `Timedelta` offset."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 3: 'DatetimeProperties' object has no attribute 'weekofyear' -> applied",
+      "2: AttributeError in cell 4: 'Series' object has no attribute 'first' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "pandas_dates_no_outputs",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 2,
+    "cells_matched": "2/2",
+    "reference": "reconstructed",
+    "time_machine": {
+      "ok": true,
+      "environment": {
+        "python": "3.10",
+        "packages": {
+          "numpy": "1.23.5",
+          "pandas": "1.5.3"
+        },
+        "unpinned": [],
+        "as_of": "2023-02-01",
+        "corrections": [],
+        "reasoning": "Notebook metadata records Python 3.10.22 and was last changed 2023-02-01; the latest pandas before that date is 1.5.3, which requires numpy <1.24, so the newest compatible numpy is 1.23.5."
+      },
+      "installed": {
+        "python": "3.10.22",
+        "numpy": "1.23.5",
+        "pandas": "1.5.3"
+      },
+      "reproduces_saved_outputs": null,
+      "vs_saved": null,
+      "attempts": [
+        {
+          "attempt": 1,
+          "environment": {
+            "python": "3.10",
+            "packages": {
+              "numpy": "1.23.5",
+              "pandas": "1.5.3"
+            },
+            "unpinned": [],
+            "as_of": "2023-02-01",
+            "corrections": [],
+            "reasoning": "Notebook metadata records Python 3.10.22 and was last changed 2023-02-01; the latest pandas before that date is 1.5.3, which requires numpy <1.24, so the newest compatible numpy is 1.23.5."
+          },
+          "result": "original ran"
+        }
+      ],
+      "error": ""
+    },
+    "reconstruction_vs_real_outputs": "verified: 2/2 cells match (0 drift, 0 changed, 0 missing)",
+    "seconds": 87.2,
+    "installed": [],
+    "usage": {
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 3,
+        "prompt_tokens": 4649,
+        "completion_tokens": 6693
+      },
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 104,
+        "completion_tokens": 274
+      }
+    },
+    "explanations": [
+      "The `weekofyear` attribute was deprecated in pandas 1.1.0 and removed in later versions; the warning indicates to use `isocalendar().week` instead. Cell 3 fails because `dates.dt.weekofyear` no longer exists. The fix replaces that call with the modern equivalent.",
+      "The Series.first method was removed in pandas 3.0.0. The replacement uses .loc with a slice up to the first timestamp plus the offset (11 days) to select the same rows."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 3: 'DatetimeProperties' object has no attribute 'weekofyear' -> applied",
+      "2: AttributeError in cell 4: 'Series' object has no attribute 'first' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "sklearn_encoders",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": true,
+    "attempts": 2,
+    "cells_matched": "2/2",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 47.5,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 2,
+        "prompt_tokens": 265,
+        "completion_tokens": 856
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 2,
+        "prompt_tokens": 4391,
+        "completion_tokens": 3575
+      }
+    },
+    "explanations": [
+      "The notebook uses two deprecated APIs in scikit-learn 1.9.1: OneHotEncoder's 'sparse' parameter was renamed to 'sparse_output', and CountVectorizer's 'get_feature_names' method was deprecated in favor of 'get_feature_names_out'. Both changes are required to avoid TypeError and FutureWarning while preserving the original output.",
+      "The get_feature_names_out() method returns a numpy array, which prints without commas (e.g., ['cat' 'dog' ...]). The saved output shows a Python list with commas, so we convert the array to a list using .tolist() to match the original output."
+    ],
+    "attempt_results": [
+      "1: TypeError in cell 2: OneHotEncoder.__init__() got an unexpected keyword argument 'sparse' -> applied",
+      "2: outputs differ from the saved outputs -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "sklearn_rmse",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "1/1",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 28.7,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 106,
+        "completion_tokens": 292
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 2370,
+        "completion_tokens": 1254
+      }
+    },
+    "explanations": [
+      "The `mean_squared_error` function in scikit-learn 1.9.1 no longer accepts a `squared` parameter (it was removed in version 1.6.1). The original code used `squared=False` to get the root mean squared error (RMSE). The fix is to compute the mean squared error (MSE) and then take the square root using `np.sqrt`."
+    ],
+    "attempt_results": [
+      "1: TypeError in cell 3: got an unexpected keyword argument 'squared' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "sklearn_renamed_params",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 2,
+    "cells_matched": "3/3",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 40.4,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 2,
+        "prompt_tokens": 215,
+        "completion_tokens": 462
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 2,
+        "prompt_tokens": 4517,
+        "completion_tokens": 1733
+      }
+    },
+    "explanations": [
+      "The error occurs because BaggingClassifier's parameter 'base_estimator' was renamed to 'estimator' in scikit-learn 1.2. Additionally, KMeans's 'algorithm' parameter value 'full' is deprecated and replaced by 'lloyd'. Both changes are required to match the current API (scikit-learn 1.9.1).",
+      "The error occurs because scikit-learn 1.9.1 renamed the `affinity` parameter of AgglomerativeClustering to `metric`. The notebook uses the old parameter name, causing a TypeError. The fix is to replace `affinity='euclidean'` with `metric='euclidean'` in cell 4."
+    ],
+    "attempt_results": [
+      "1: TypeError in cell 2: BaggingClassifier.__init__() got an unexpected keyword argument 'base_estimator' -> applied",
+      "2: TypeError in cell 4: AgglomerativeClustering.__init__() got an unexpected keyword argument 'affinity' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "sklearn_ovr_trap",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "1/1",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 30.1,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 104,
+        "completion_tokens": 203
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 2111,
+        "completion_tokens": 2438
+      }
+    },
+    "explanations": [
+      "The `multi_class` parameter was removed from `LogisticRegression` in scikit-learn 1.8+. The notebook's original intent was to use one-vs-rest (OvR) multiclass strategy. Since `OneVsRestClassifier` is already imported, we replace the direct `LogisticRegression(multi_class='ovr')` with an `OneVsRestClassifier` wrapping a base `LogisticRegression` to preserve the OvR behavior and match the saved outputs."
+    ],
+    "attempt_results": [
+      "1: TypeError in cell 3: LogisticRegression.__init__() got an unexpected keyword argument 'multi_class' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "sklearn_kmeans_silent",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": true,
+    "attempts": 3,
+    "cells_matched": "1/1",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 90.3,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 3,
+        "prompt_tokens": 436,
+        "completion_tokens": 1139
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 3,
+        "prompt_tokens": 6145,
+        "completion_tokens": 15901
+      }
+    },
+    "explanations": [
+      "The default algorithm for KMeans changed from 'auto' (which selected 'full' for this dataset size) to 'lloyd' in scikit-learn 1.4, causing a different convergence result and thus a different inertia value. Setting algorithm='full' restores the original behavior.",
+      "The 'algorithm' parameter in KMeans no longer accepts 'full' in scikit-learn 1.9.1; valid options are 'elkan' and 'lloyd'. The classical EM-style algorithm (formerly 'full') is now 'lloyd', so we replace 'full' with 'lloyd' to restore the original behavior.",
+      "The inertia difference stems from a change in KMeans' default initialization behavior. In older scikit-learn versions, the 'full' algorithm (renamed to 'lloyd' in 1.1) used random initialization with 10 runs by default. Since version 1.2, the default initialization became 'k-means++' with a single run (n_init='auto' gives 1 for 'k-means++'). The current code uses algorithm='lloyd' but retains the new defaults, yielding a higher inertia. Adding init='random' and n_init=10 restores the original initialization scheme and matches the saved output."
+    ],
+    "attempt_results": [
+      "1: outputs differ from the saved outputs -> applied",
+      "2: InvalidParameterError in cell 3: The 'algorithm' parameter of KMeans must be a str among {'elkan', 'lloyd'}. Got 'full' instead. -> applied",
+      "3: outputs differ from the saved outputs -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "sklearn_kmeans_silent_no_outputs",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": true,
+    "attempts": 2,
+    "cells_matched": "1/1",
+    "reference": "reconstructed",
+    "time_machine": {
+      "ok": true,
+      "environment": {
+        "python": "3.10",
+        "packages": {
+          "numpy": "1.24.1"
+        },
+        "unpinned": [
+          "scikit-learn"
+        ],
+        "as_of": "2023-02-01",
+        "corrections": [
+          "scipy 1.10.1 was released after 2023-02-01; using the newest scipy from before that date",
+          "scikit-learn 1.3.0 was released after 2023-02-01; using the newest scikit-learn from before that date"
+        ],
+        "reasoning": "Notebook metadata shows Python 3.10; scikit-learn 1.3.0 (released 2023-01-26) is the latest before 2023-02-01 and works with numpy 1.24.1 and scipy 1.10.1 (both latest pre-2023-02-01)."
+      },
+      "installed": {
+        "python": "3.10.22",
+        "scikit-learn": "1.2.1"
+      },
+      "reproduces_saved_outputs": null,
+      "vs_saved": null,
+      "attempts": [
+        {
+          "attempt": 1,
+          "environment": {
+            "python": "3.10",
+            "packages": {
+              "numpy": "1.24.1"
+            },
+            "unpinned": [
+              "scikit-learn"
+            ],
+            "as_of": "2023-02-01",
+            "corrections": [
+              "scipy 1.10.1 was released after 2023-02-01; using the newest scipy from before that date",
+              "scikit-learn 1.3.0 was released after 2023-02-01; using the newest scikit-learn from before that date"
+            ],
+            "reasoning": "Notebook metadata shows Python 3.10; scikit-learn 1.3.0 (released 2023-01-26) is the latest before 2023-02-01 and works with numpy 1.24.1 and scipy 1.10.1 (both latest pre-2023-02-01)."
+          },
+          "result": "original ran"
+        }
+      ],
+      "error": ""
+    },
+    "reconstruction_vs_real_outputs": "verified: 1/1 cells match (0 drift, 0 changed, 0 missing)",
+    "seconds": 137.1,
+    "installed": [],
+    "usage": {
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 2,
+        "prompt_tokens": 2537,
+        "completion_tokens": 2934
+      },
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 155,
+        "completion_tokens": 775
+      }
+    },
+    "explanations": [
+      "The inertia_ value changed because scikit-learn 1.4+ altered the default n_init parameter from 10 to 'auto', which uses a different initialization strategy (lloyd instead of elkan). The original notebook ran with the old default (n_init=10). Setting n_init=10 explicitly restores the original clustering result and suppresses the FutureWarning."
+    ],
+    "attempt_results": [
+      "1: outputs differ from the original environment's outputs -> model call failed: <html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Service Temporarily Unavailable</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>",
+      "2: outputs differ from the original environment's outputs -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "legacy_churn_model",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 2,
+    "cells_matched": "6/6",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 43.7,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 2,
+        "prompt_tokens": 237,
+        "completion_tokens": 403
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 2,
+        "prompt_tokens": 5463,
+        "completion_tokens": 4293
+      }
+    },
+    "explanations": [
+      "The notebook fails because pandas 3.1.0 removed DataFrame.append (deprecated since 1.4.0). Cell 3 must use pd.concat instead. Additionally, three deprecation warnings must be silenced: np.float/np.int in cell 4 should become built-in float/int, and DataFrame.iteritems in cell 7 should become .items().",
+      "The error occurs because scikit-learn 1.2 renamed OneHotEncoder's `sparse` parameter to `sparse_output`. The notebook uses `sparse=False` which is no longer accepted. All other warnings refer to APIs that are already fixed in the provided code (pd.concat, built-in float/int, .items()), so only cell 5 needs changing."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 3: 'DataFrame' object has no attribute 'append' -> applied",
+      "2: TypeError in cell 5: OneHotEncoder.__init__() got an unexpected keyword argument 'sparse' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "legacy_churn_model_no_outputs",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "6/6",
+    "reference": "reconstructed",
+    "time_machine": {
+      "ok": true,
+      "environment": {
+        "python": "3.10",
+        "packages": {
+          "numpy": "1.22.4",
+          "pandas": "1.5.3",
+          "scipy": "1.10.0"
+        },
+        "unpinned": [
+          "scikit-learn"
+        ],
+        "as_of": "2023-02-01",
+        "corrections": [
+          "scikit-learn 1.2.2 was released after 2023-02-01; using the newest scikit-learn from before that date"
+        ],
+        "reasoning": "Notebook metadata shows Python 3.10; APIs used (np.random.RandomState, df.append, iteritems, np.float, OneHotEncoder(sparse=False)) exist in numpy 1.22.4, pandas 1.5.3, scikit-learn 1.2.2, and scipy 1.10.0, all released before 2023-02-01 and mutually compatible."
+      },
+      "installed": {
+        "python": "3.10.22",
+        "numpy": "1.22.4",
+        "pandas": "1.5.3",
+        "scikit-learn": "1.2.1"
+      },
+      "reproduces_saved_outputs": null,
+      "vs_saved": null,
+      "attempts": [
+        {
+          "attempt": 1,
+          "environment": {
+            "python": "3.10",
+            "packages": {
+              "numpy": "1.22.4",
+              "pandas": "1.5.3",
+              "scipy": "1.10.0"
+            },
+            "unpinned": [
+              "scikit-learn"
+            ],
+            "as_of": "2023-02-01",
+            "corrections": [
+              "scikit-learn 1.2.2 was released after 2023-02-01; using the newest scikit-learn from before that date"
+            ],
+            "reasoning": "Notebook metadata shows Python 3.10; APIs used (np.random.RandomState, df.append, iteritems, np.float, OneHotEncoder(sparse=False)) exist in numpy 1.22.4, pandas 1.5.3, scikit-learn 1.2.2, and scipy 1.10.0, all released before 2023-02-01 and mutually compatible."
+          },
+          "result": "original ran"
+        }
+      ],
+      "error": ""
+    },
+    "reconstruction_vs_real_outputs": "verified: 6/6 cells match (0 drift, 0 changed, 0 missing)",
+    "seconds": 71.9,
+    "installed": [],
+    "usage": {
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 2,
+        "prompt_tokens": 3818,
+        "completion_tokens": 9203
+      },
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 116,
+        "completion_tokens": 254
+      }
+    },
+    "explanations": [
+      "The notebook fails in cell 3 because pandas 3.1.0 removed DataFrame.append (deprecated since 1.4.0). Additionally, cells 4, 5, and 7 use deprecated APIs: np.float/np.int (use built-in float/int), OneHotEncoder's sparse parameter (renamed to sparse_output), and DataFrame.iteritems (renamed to items). All are fixed with minimal changes."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 3: 'DataFrame' object has no attribute 'append' -> applied"
+    ],
+    "last_error": ""
+  }
+]

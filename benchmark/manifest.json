@@ -1,0 +1,168 @@
+[
+  {
+    "name": "numpy_type_aliases",
+    "title": "Feature scaling with NumPy type aliases",
+    "breaks": "np.float / np.int / np.bool (removed in NumPy 1.24)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "AttributeError in cell 3: module 'numpy' has no attribute 'float'."
+  },
+  {
+    "name": "numpy2_constants",
+    "title": "Cleaning sensor readings with NumPy constants",
+    "breaks": "np.NaN, np.Inf, np.round_ (removed in NumPy 2.0)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "AttributeError in cell 2: `np.NaN` was removed in the NumPy 2.0 release. Use `np.nan` instead."
+  },
+  {
+    "name": "numpy2_functions",
+    "title": "Array utilities renamed in NumPy 2",
+    "breaks": "np.product, np.cumproduct, np.alltrue, np.in1d, np.trapz, np.row_stack",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "AttributeError in cell 2: module 'numpy' has no attribute 'product'"
+  },
+  {
+    "name": "numpy_asscalar",
+    "title": "Extracting Python scalars from arrays",
+    "breaks": "np.asscalar (removed in NumPy 1.23)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "AttributeError in cell 2: module 'numpy' has no attribute 'asscalar'"
+  },
+  {
+    "name": "pandas_append",
+    "title": "Collecting experiment results row by row",
+    "breaks": "DataFrame.append and Series.append (removed in pandas 2.0)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "AttributeError in cell 2: 'DataFrame' object has no attribute 'append'"
+  },
+  {
+    "name": "pandas_iteritems",
+    "title": "Column summaries with iteritems",
+    "breaks": "DataFrame.iteritems (removed in pandas 2.0)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "AttributeError in cell 3: 'DataFrame' object has no attribute 'iteritems'"
+  },
+  {
+    "name": "pandas_ix_lookup",
+    "title": "Label lookups with .ix and DataFrame.lookup",
+    "breaks": ".ix (removed in pandas 1.0), DataFrame.lookup (removed in 2.0)",
+    "kind": "error",
+    "written_for": "Python 3.8, numpy 1.18.5, pandas 0.25.3",
+    "observed_today": "AttributeError in cell 3: 'DataFrame' object has no attribute 'ix'"
+  },
+  {
+    "name": "pandas_mad_applymap",
+    "title": "Robust statistics with mad and applymap",
+    "breaks": "DataFrame.mad (removed in pandas 2.0), DataFrame.applymap (removed in 3.0)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "AttributeError in cell 3: 'DataFrame' object has no attribute 'mad'"
+  },
+  {
+    "name": "pandas_io_fill",
+    "title": "Reading whitespace data and forward-filling gaps",
+    "breaks": "read_csv(delim_whitespace=...) and fillna(method=...) (removed in pandas 3.0)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "TypeError in cell 2: read_csv() got an unexpected keyword argument 'delim_whitespace'"
+  },
+  {
+    "name": "pandas_groupby_numeric",
+    "title": "Group means on a mixed-type table",
+    "breaks": "groupby().mean() no longer drops non-numeric columns silently",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "TypeError in cell 3: dtype 'str' does not support operation 'mean'"
+  },
+  {
+    "name": "pandas_dates",
+    "title": "Weekly features from timestamps",
+    "breaks": "Series.dt.weekofyear and Series.first (removed in pandas 2.x/3.0)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "AttributeError in cell 3: 'DatetimeProperties' object has no attribute 'weekofyear'"
+  },
+  {
+    "name": "pandas_dates_no_outputs",
+    "title": "Weekly features from timestamps (saved without outputs)",
+    "breaks": "Series.dt.weekofyear and Series.first (removed in pandas 2.x/3.0)",
+    "kind": "no_outputs",
+    "base": "pandas_dates",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "as_of": "2023-02-01",
+    "observed_today": "no saved outputs: AttributeError in cell 3: 'DatetimeProperties' object has no attribute 'weekofyear'"
+  },
+  {
+    "name": "sklearn_encoders",
+    "title": "Encoding categorical and text features",
+    "breaks": "OneHotEncoder(sparse=...) (removed in 1.4), get_feature_names (removed in 1.2)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "TypeError in cell 2: OneHotEncoder.__init__() got an unexpected keyword argument 'sparse'"
+  },
+  {
+    "name": "sklearn_rmse",
+    "title": "Regression error report",
+    "breaks": "mean_squared_error(squared=False) (removed in 1.6)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "TypeError in cell 3: got an unexpected keyword argument 'squared'"
+  },
+  {
+    "name": "sklearn_renamed_params",
+    "title": "Ensembles and clustering with renamed parameters",
+    "breaks": "base_estimator, algorithm='full', affinity (renamed/removed)",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "TypeError in cell 2: BaggingClassifier.__init__() got an unexpected keyword argument 'base_estimator'"
+  },
+  {
+    "name": "sklearn_ovr_trap",
+    "title": "One-vs-rest classifier (dropping the old flag changes results)",
+    "breaks": "LogisticRegression(multi_class='ovr') removed; deleting the argument silently switches to multinomial",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "TypeError in cell 3: LogisticRegression.__init__() got an unexpected keyword argument 'multi_class'"
+  },
+  {
+    "name": "sklearn_kmeans_silent",
+    "title": "Customer segments with KMeans (runs fine, wrong numbers)",
+    "breaks": "KMeans default n_init changed from 10 to 'auto' in 1.4: no error, different clusters",
+    "kind": "silent",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "NOT verified: 0/1 cells match (1 drift, 0 changed, 0 missing)"
+  },
+  {
+    "name": "sklearn_kmeans_silent_no_outputs",
+    "title": "Customer segments with KMeans (runs fine, wrong numbers) (saved without outputs)",
+    "breaks": "KMeans default n_init changed from 10 to 'auto' in 1.4: no error, different clusters",
+    "kind": "no_outputs",
+    "base": "sklearn_kmeans_silent",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "as_of": "2023-02-01",
+    "observed_today": "no saved outputs: NOT verified: 0/1 cells match (1 drift, 0 changed, 0 missing)"
+  },
+  {
+    "name": "legacy_churn_model",
+    "title": "Customer churn model (written in 2021)",
+    "breaks": "DataFrame.append, np.float/np.int, OneHotEncoder(sparse=), iteritems",
+    "kind": "error",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "observed_today": "AttributeError in cell 3: 'DataFrame' object has no attribute 'append'"
+  },
+  {
+    "name": "legacy_churn_model_no_outputs",
+    "title": "Customer churn model (written in 2021) (saved without outputs)",
+    "breaks": "DataFrame.append, np.float/np.int, OneHotEncoder(sparse=), iteritems",
+    "kind": "no_outputs",
+    "base": "legacy_churn_model",
+    "written_for": "Python 3.10, numpy 1.22.4, pandas 1.5.3, scikit-learn 1.1.3",
+    "as_of": "2023-02-01",
+    "observed_today": "no saved outputs: AttributeError in cell 3: 'DataFrame' object has no attribute 'append'"
+  }
+]

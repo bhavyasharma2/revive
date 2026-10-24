@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revive</title>
+<meta name="description" content="Revive repairs broken ML notebooks with NVIDIA Nemotron and proves the fix against the outputs the author saved.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231C2733'/%3E%3Cpath d='M9 17l5 5 9-11' stroke='%235BC08F' stroke-width='3.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EEF2F0;
+  --panel: #FBFCFB;
+  --ink: #1C2733;
+  --muted: #5B6873;
+  --line: #D3DCD7;
+  --code-bg: #F3F6F4;
+  --ok: #1F6E4A;
+  --ok-soft: #DDEEE5;
+  --bad: #B3261E;
+  --bad-soft: #F7E1DE;
+  --warn: #9A6200;
+  --warn-soft: #F6EAD3;
+  --agent: #3446B8;
+  --agent-soft: #E3E6F8;
+  --time: #0E7069;
+  --time-soft: #DCEFEC;
+  --focus: #3446B8;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111A20; --panel: #17222A; --ink: #DCE5EA; --muted: #91A0AB; --line: #2A3843;
+    --code-bg: #1C2932; --ok: #5BC08F; --ok-soft: #173326; --bad: #EF7D73; --bad-soft: #3A1E1C;
+    --warn: #E0A84A; --warn-soft: #33281A; --agent: #9AA6FF; --agent-soft: #212848; --focus: #9AA6FF;
+    --time: #52C7BB; --time-soft: #163A37;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--agent); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button, select, input { font: inherit; color: inherit; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 24px 64px; }
+
+/* Header */
+.top { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 22px; }
+.brand { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }
+.brand .pulse { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--ok); margin-left: 6px; vertical-align: 6px; }
+.lede { margin: 0; color: var(--muted); max-width: 64ch; }
+.powered { color: var(--muted); font-size: 13px; text-align: right; }
+
+/* Controls */
+.controls {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+}
+.controls select {
+  width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel);
+}
+.btn {
+  border: 1px solid var(--ink); background: var(--ink); color: var(--panel); border-radius: 6px;
+  padding: 9px 16px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.sample-note { grid-column: 1 / -1; margin: 2px 2px 0; font-size: 13px; color: var(--muted); }
+.tm-toggle { grid-column: 1 / -1; display: flex; gap: 8px; align-items: flex-start; font-size: 14px; margin: 2px 2px 0; cursor: pointer; }
+.tm-toggle input { margin-top: 4px; accent-color: var(--time); }
+.tm-toggle b { color: var(--time); font-weight: 600; }
+.upload { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+.upload label { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+/* Verdict */
+.verdict {
+  margin: 18px 0 0; padding: 16px 18px; border-radius: 8px; border: 1px solid var(--line);
+  display: none; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; background: var(--panel);
+}
+.verdict.show { display: grid; }
+.verdict .mark { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 20px; }
+.verdict h2 { margin: 0; font-size: 18px; line-height: 1.3; }
+.verdict p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+.verdict.ok { border-color: var(--ok); }
+.verdict.ok .mark { background: var(--ok); color: var(--panel); }
+.verdict.warn { border-color: var(--warn); }
+.verdict.warn .mark { background: var(--warn); color: var(--panel); }
+.verdict.bad { border-color: var(--bad); }
+.verdict.bad .mark { background: var(--bad); color: var(--panel); }
+.verdict .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.verdict .actions a { text-decoration: none; }
+
+.replay-note { margin: 14px 2px 0; font-size: 13px; color: var(--muted); display: none; }
+.replay-note.show { display: block; }
+
+/* Main grid */
+.main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; margin-top: 18px; align-items: start; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.panel > header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.panel > header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.panel > header span { font-size: 13px; color: var(--muted); }
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); }
+
+/* Notebook */
+.cell { display: grid; grid-template-columns: 76px minmax(0, 1fr); border-bottom: 1px solid var(--line); }
+.cell:last-child { border-bottom: 0; }
+.gutter {
+  padding: 12px 10px 12px 14px; border-right: 3px solid var(--line); font-size: 12px; color: var(--muted);
+  display: flex; flex-direction: column; gap: 6px; transition: border-color .25s ease;
+}
+.gutter .n { font-family: var(--mono); }
+.gutter .state { font-weight: 600; font-size: 12px; }
+.cell[data-state="running"] .gutter { border-right-color: var(--agent); }
+.cell[data-state="ran"] .gutter { border-right-color: var(--muted); }
+.cell[data-state="failed"] .gutter { border-right-color: var(--bad); }
+.cell[data-state="failed"] .state { color: var(--bad); }
+.cell[data-state="match"] .gutter { border-right-color: var(--ok); }
+.cell[data-state="match"] .state { color: var(--ok); }
+.cell[data-state="drift"] .gutter, .cell[data-state="changed"] .gutter { border-right-color: var(--warn); }
+.cell[data-state="drift"] .state, .cell[data-state="changed"] .state { color: var(--warn); }
+.cell[data-state="missing"] .gutter { border-right-color: var(--bad); }
+.cell[data-state="missing"] .state { color: var(--bad); }
+.body { padding: 10px 14px 12px; min-width: 0; }
+.edited { display: inline-block; font-size: 11px; font-weight: 600; color: var(--agent); background: var(--agent-soft); padding: 1px 6px; border-radius: 4px; }
+pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; }
+.src { background: var(--code-bg); padding: 8px 10px; border-radius: 4px; }
+.out { margin-top: 8px; display: grid; gap: 6px; }
+.out .row { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: start; }
+.out .tag { font-size: 12px; color: var(--muted); padding-top: 1px; }
+.out pre { color: var(--muted); }
+.out .fresh pre { color: var(--ink); }
+.out .detail { font-size: 13px; color: var(--warn); }
+.md { color: var(--muted); font-size: 14px; }
+.md h1, .md h2 { font-size: 16px; color: var(--ink); margin: 0; }
+
+/* Log */
+.log { list-style: none; margin: 0; padding: 6px 0; }
+.log > li { padding: 10px 16px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; }
+.log > li:last-child { border-bottom: 0; }
+.log .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; background: var(--muted); }
+.log .k-run.bad .dot { background: var(--bad); }
+.log .k-run.ok .dot { background: var(--ok); }
+.log .k-agent .dot, .log .k-search .dot { background: var(--agent); }
+.log .k-verify.ok .dot { background: var(--ok); }
+.log .k-verify.warn .dot { background: var(--warn); }
+.log .k-warn .dot { background: var(--warn); }
+.log .k-tm .dot { background: var(--time); }
+.log .k-tm h4 { color: var(--time); }
+.out .tag.original { color: var(--time); }
+.log h4 { margin: 0; font-size: 14px; font-weight: 600; }
+.log p { margin: 2px 0 0; font-size: 14px; }
+.log .sub { color: var(--muted); font-size: 13px; }
+.log .attempt { color: var(--agent); }
+.sources { margin: 6px 0 0; padding: 0; list-style: none; font-size: 13px; display: grid; gap: 3px; }
+.sources a { word-break: break-all; }
+.diff { margin-top: 8px; background: var(--code-bg); border-radius: 4px; padding: 6px 0; }
+.diff pre { padding: 0 10px 0 22px; text-indent: -12px; white-space: pre-wrap; word-break: break-word; }
+.diff .add { background: var(--ok-soft); color: var(--ok); }
+.diff .del { background: var(--bad-soft); color: var(--bad); }
+.diff .hunk { color: var(--muted); }
+.thinking::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: dots 1.2s steps(4) infinite; }
+@keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+
+.foot { margin-top: 28px; font-size: 13px; color: var(--muted); max-width: 80ch; }
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  .top { grid-template-columns: 1fr; }
+  .powered { text-align: left; }
+}
+@media (max-width: 560px) {
+  .wrap { padding: 18px 16px 48px; }
+  .controls { grid-template-columns: 1fr 1fr; }
+  .controls select { grid-column: 1 / -1; }
+  .cell { grid-template-columns: 1fr; }
+  .gutter { border-right: 0; border-bottom: 3px solid var(--line); flex-direction: row; padding: 8px 14px; }
+  .cell[data-state] .gutter { border-right: 0; }
+  .cell[data-state="failed"] .gutter, .cell[data-state="missing"] .gutter { border-bottom-color: var(--bad); }
+  .cell[data-state="match"] .gutter { border-bottom-color: var(--ok); }
+  .cell[data-state="drift"] .gutter, .cell[data-state="changed"] .gutter { border-bottom-color: var(--warn); }
+  .verdict { grid-template-columns: auto 1fr; }
+  .verdict .actions { grid-column: 1 / -1; justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1 class="brand">Revive<span class="pulse" aria-hidden="true"></span></h1>
+      <p class="lede">Repairs ML notebooks that broke when their libraries changed, then proves the fix: every cell is re-run and checked against the output its author saved.</p>
+    </div>
+    <div class="powered">NVIDIA Nemotron on Nebius Token Factory<br>Web evidence from Tavily</div>
+  </div>
+
+  <div class="controls" role="group" aria-label="Choose a notebook">
+    <select id="sample" aria-label="Broken notebook"></select>
+    <button class="btn" id="run">Repair notebook</button>
+    <button class="btn secondary" id="live" title="Call Nemotron now instead of replaying a recorded run">Run live</button>
+    <label class="tm-toggle"><input type="checkbox" id="tm"><span><b>Time Machine:</b> also rebuild the environment this notebook was written for and run the untouched original there. Notebooks saved without outputs always use it, because that is the only way to know what they should print.</span></label>
+    <p class="sample-note" id="sampleNote"></p>
+    <div class="upload" id="uploadBox" hidden>
+      Or <label for="file">repair your own .ipynb</label> (it runs on this server, so only upload notebooks you trust).
+      <input type="file" id="file" accept=".ipynb,application/json">
+    </div>
+  </div>
+
+  <div class="verdict" id="verdict" role="status" aria-live="polite">
+    <div class="mark" id="verdictMark"></div>
+    <div><h2 id="verdictTitle"></h2><p id="verdictText"></p></div>
+    <div class="actions" id="verdictActions"></div>
+  </div>
+  <p class="replay-note" id="replayNote"></p>
+
+  <div class="main">
+    <section class="panel" aria-labelledby="nbTitle">
+      <header><h3 id="nbTitle">Notebook</h3><span id="nbMeta"></span></header>
+      <div id="cells"><p class="empty">Pick a broken notebook and press Repair notebook.</p></div>
+    </section>
+    <section class="panel" aria-labelledby="logTitle">
+      <header><h3 id="logTitle">Repair log</h3><span id="logMeta"></span></header>
+      <ol class="log" id="log" aria-live="polite"></ol>
+    </section>
+  </div>
+
+  <p class="foot">Each repair runs the notebook in its own Python environment. A large Nemotron model reads the error, the library versions and the changelog Tavily finds, and writes a patch. A notebook only counts as verified when every cell's fresh output matches the reference within a numeric tolerance: the outputs its author saved or, for a notebook saved without them, the outputs of the untouched original in its rebuilt environment. A fix that runs but changes the numbers is sent back.</p>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const state = { samples: [], config: {}, source: null, cells: new Map(), attempts: 0, thinkingEl: null, round: 0, jobId: null, reference: "saved" };
+
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmtDate = (t) => new Date(t * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+  async function api(path, opts) {
+    const res = await fetch(path, opts);
+    if (!res.ok) {
+      let msg = res.statusText;
+      try { msg = (await res.json()).detail || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
+  function sampleNote() {
+    const s = state.samples.find((x) => x.name === $("sample").value);
+    if (!s) { $("sampleNote").textContent = ""; return; }
+    const recorded = $("tm").checked ? s.recorded_tm_at : s.recorded_at;
+    const replay = recorded ? `A recorded run from ${fmtDate(recorded)} is available, so Repair notebook replays it instantly.` : "No recorded run yet, so this calls Nemotron live.";
+    const dated = s.as_of ? ` Last changed ${s.as_of} (its version-control date).` : "";
+    $("sampleNote").textContent = `What broke: ${s.breaks}.${dated} ${replay}`;
+    $("live").hidden = !recorded || !state.config.live_enabled;
+  }
+
+  async function init() {
+    try {
+      [state.config, state.samples] = await Promise.all([api("/api/config"), api("/api/samples")]);
+    } catch (e) {
+      $("cells").innerHTML = `<p class="empty">Could not reach the server: ${esc(e.message)}</p>`;
+      return;
+    }
+    $("sample").innerHTML = state.samples.map((s) => `<option value="${esc(s.name)}">${esc(s.title)}</option>`).join("");
+    const preferred = state.samples.find((s) => s.name === "legacy_churn_model");
+    if (preferred) $("sample").value = preferred.name;
+    sampleNote();
+    $("uploadBox").hidden = !state.config.allow_uploads;
+  }
+
+  function resetView() {
+    if (state.source) state.source.close();
+    state.cells.clear(); state.attempts = 0; state.round = 0; state.thinkingEl = null; state.reference = "saved";
+    $("log").innerHTML = ""; $("cells").innerHTML = ""; $("nbMeta").textContent = ""; $("logMeta").textContent = "";
+    $("verdict").className = "verdict"; $("replayNote").className = "replay-note";
+  }
+
+  function setBusy(busy) {
+    $("run").disabled = busy; $("live").disabled = busy; $("sample").disabled = busy; $("tm").disabled = busy;
+    const file = $("file"); if (file) file.disabled = busy;
+  }
+
+  async function start(body) {
+    resetView(); setBusy(true);
+    let job;
+    try {
+      job = await api("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    } catch (e) {
+      showVerdict("bad", "!", "Could not start the repair", e.message);
+      setBusy(false); return;
+    }
+    state.jobId = job.id;
+    if (!job.live && job.recorded_at) {
+      $("replayNote").textContent = `Replaying a live run recorded on ${fmtDate(job.recorded_at)}. Use Run live to call Nemotron now.`;
+      $("replayNote").className = "replay-note show";
+    }
+    const source = new EventSource(`/api/jobs/${job.id}/events`);
+    state.source = source;
+    source.onmessage = (m) => handle(JSON.parse(m.data));
+    source.addEventListener("end", (m) => {
+      source.close(); setBusy(false);
+      const summary = JSON.parse(m.data);
+      if (!summary.has_notebook) { const dl = $("dl"); if (dl) dl.remove(); }
+      if (summary.error) { const rep = $("rep"); if (rep) rep.remove(); }
+    });
+    source.onerror = () => { source.close(); setBusy(false); };
+  }
+
+  // ---------- notebook ----------
+  const STATE_LABEL = { pending: "", running: "running", ran: "ran", failed: "failed", match: "matches", drift: "drift", changed: "changed", missing: "missing", extra: "new output", skipped: "" };
+
+  function renderNotebook(cells) {
+    const box = $("cells"); box.innerHTML = "";
+    let code = 0;
+    for (const c of cells) {
+      const el = document.createElement("div");
+      el.className = "cell"; el.dataset.state = "pending";
+      if (c.type === "code") {
+        code += 1;
+        el.innerHTML = `<div class="gutter"><span class="n">[${c.index}]</span><span class="state"></span></div>
+          <div class="body"><pre class="src"></pre><div class="out"></div></div>`;
+        el.querySelector(".src").textContent = c.source;
+        setOutputs(el, c.saved_output, null, "");
+      } else {
+        const text = esc(c.source).replace(/^#+\s*(.*)$/gm, "<h2>$1</h2>");
+        el.innerHTML = `<div class="gutter"></div><div class="body md">${text}</div>`;
+      }
+      box.appendChild(el);
+      state.cells.set(c.index, { el, saved: c.saved_output || "" });
+    }
+    $("nbMeta").textContent = `${code} code cells`;
+  }
+
+  function setOutputs(el, saved, fresh, detail) {
+    const out = el.querySelector(".out"); if (!out) return;
+    let html = "";
+    const tag = state.reference === "reconstructed" ? '<span class="tag original" title="printed by the untouched notebook in its rebuilt original environment">original</span>' : '<span class="tag">saved</span>';
+    if (saved) html += `<div class="row">${tag}<pre>${esc(saved.trimEnd())}</pre></div>`;
+    if (fresh !== null && fresh !== undefined && fresh !== saved) html += `<div class="row fresh"><span class="tag">now</span><pre>${esc(fresh.trimEnd()) || "(no output)"}</pre></div>`;
+    if (detail) html += `<div class="row"><span class="tag"></span><span class="detail">${esc(detail)}</span></div>`;
+    out.innerHTML = html;
+  }
+
+  function setCell(index, st) {
+    const c = state.cells.get(index); if (!c) return;
+    c.el.dataset.state = st;
+    const label = c.el.querySelector(".state"); if (label) label.textContent = STATE_LABEL[st] ?? st;
+  }
+
+  function codeIndices() { return [...state.cells.entries()].filter(([, c]) => c.el.querySelector(".src")).map(([i]) => i); }
+
+  // ---------- log ----------
+  function logItem(kind, cls, html) {
+    const li = document.createElement("li");
+    li.className = `k-${kind} ${cls || ""}`;
+    li.innerHTML = `<span class="dot" aria-hidden="true"></span><div>${html}</div>`;
+    $("log").appendChild(li);
+    return li;
+  }
+
+  function diffHtml(diff) {
+    return diff.split("\n").map((line) => {
+      let cls = "";
+      if (line.startsWith("+++") || line.startsWith("---") || line.startsWith("@@")) cls = "hunk";
+      else if (line.startsWith("+")) cls = "add";
+      else if (line.startsWith("-")) cls = "del";
+      else if (line.startsWith("pip install")) cls = "add";
+      return `<pre class="${cls}">${esc(line) || " "}</pre>`;
+    }).join("");
+  }
+
+  function stopThinking() { if (state.thinkingEl) { state.thinkingEl.remove(); state.thinkingEl = null; } }
+
+  function applyPatchToNotebook(edits) {
+    for (const edit of edits || []) {
+      const c = state.cells.get(edit.cell_index); if (!c) continue;
+      const src = c.el.querySelector(".src"); if (!src) continue;
+      src.textContent = edit.new_source;
+      const n = c.el.querySelector(".gutter .n");
+      if (n && !c.el.querySelector(".edited")) n.insertAdjacentHTML("afterend", '<span class="edited">edited</span>');
+    }
+  }
+
+  function showVerdict(kind, mark, title, text, actions = "") {
+    $("verdict").className = `verdict show ${kind}`;
+    $("verdictMark").textContent = mark; $("verdictTitle").textContent = title; $("verdictText").textContent = text;
+    $("verdictActions").innerHTML = actions;
+  }
+
+  const OUTCOME = {
+    verified: ["ok", "✓", "Verified: it runs again and every saved output matches"],
+    already_working: ["ok", "✓", "This notebook already works"],
+    runs_unverified: ["warn", "?", "It runs, but there was nothing to verify against"],
+    drift: ["warn", "≠", "It runs, but the numbers changed"],
+    failed: ["bad", "✕", "Could not repair this notebook"],
+  };
+  const OUTCOME_RECONSTRUCTED = {
+    verified: "Verified: it runs again and matches the original environment",
+    already_working: "This notebook already matches its original environment",
+  };
+
+  function handle(e) {
+    switch (e.type) {
+      case "notebook": renderNotebook(e.cells); break;
+      case "run_start": {
+        state.round = e.round;
+        codeIndices().forEach((i) => setCell(i, "pending"));
+        const first = codeIndices()[0]; if (first !== undefined) setCell(first, "running");
+        break;
+      }
+      case "run_result": {
+        stopThinking();
+        const idx = codeIndices();
+        if (e.ok) idx.forEach((i) => setCell(i, "ran"));
+        else idx.forEach((i) => setCell(i, i < e.failed_cell ? "ran" : i === e.failed_cell ? "failed" : "pending"));
+        const title = e.round === 0 ? "Ran it with today's libraries" : `Re-ran with attempt ${e.round}`;
+        logItem("run", e.ok ? "ok" : "bad",
+          `<h4>${esc(title)}</h4><p>${e.ok ? "All cells ran without errors." : esc(e.error)}</p><p class="sub">${e.duration_s}s in an isolated environment</p>`);
+        break;
+      }
+      case "search":
+        logItem("search", "", `<h4>Searched the web with Tavily</h4><p class="sub">${esc(e.query)}</p>
+          <ul class="sources">${e.sources.slice(0, 3).map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a></li>`).join("")}</ul>`);
+        break;
+      case "thinking":
+        state.attempts = e.attempt;
+        stopThinking();
+        state.thinkingEl = logItem("agent", "", `<h4><span class="attempt">Attempt ${e.attempt}</span>: <span class="thinking">Nemotron is writing a fix</span></h4>`);
+        break;
+      case "patch": {
+        stopThinking();
+        const model = e.model ? `<p class="sub">${esc(e.model)}</p>` : "";
+        logItem("agent", "", `<h4><span class="attempt">Attempt ${e.attempt}</span>: proposed fix</h4><p>${esc(e.explanation)}</p>${model}<div class="diff">${diffHtml(e.diff)}</div>`);
+        applyPatchToNotebook(e.edits);
+        break;
+      }
+      case "patch_rejected":
+        stopThinking();
+        logItem("warn", "", `<h4>Attempt ${e.attempt} rejected</h4><p class="sub">${esc(e.reason)}</p>`);
+        break;
+      case "install":
+        logItem(e.ok ? "agent" : "warn", "", `<h4>${e.ok ? "Installed" : "Could not install"} ${esc(e.specs.join(" "))}</h4>`);
+        break;
+      case "warning":
+        stopThinking();
+        logItem("warn", "", `<p class="sub">${esc(e.message)}</p>`);
+        break;
+      case "compare": {
+        if (e.reference) state.reference = e.reference;
+        for (const c of e.cells) {
+          setCell(c.cell_index, c.status);
+          const cell = state.cells.get(c.cell_index);
+          if (cell) setOutputs(cell.el, c.stored, c.status === "match" ? null : c.fresh, c.status === "match" ? "" : c.detail);
+        }
+        const ok = e.verified, unver = e.unverifiable;
+        const ref = e.reference === "reconstructed" ? "the original environment's outputs" : "the saved outputs";
+        logItem("verify", ok ? "ok" : "warn",
+          `<h4>${ok ? `Every output matches ${ref}` : unver ? "No saved outputs to check" : `Outputs differ from ${ref}`}</h4><p class="sub">${esc(e.summary)}</p>`);
+        break;
+      }
+      case "time_machine":
+        logItem("tm", "", `<h4>Time Machine</h4><p>${e.reason === "no saved outputs"
+          ? "This notebook was saved without outputs, so there is nothing to check a fix against. Revive rebuilds the environment it was written for and runs the untouched original there."
+          : "Rebuilding the environment this notebook was written for, to check that its saved outputs can be reproduced."}</p>`);
+        break;
+      case "reconstruct_env":
+        stopThinking();
+        state.thinkingEl = logItem("tm", "", `<h4>Nemotron's estimate: ${esc(e.description)}</h4>${e.as_of ? `<p class="sub">Only packages released before ${esc(e.as_of)}, the notebook's last commit date.</p>` : ""}${e.reasoning ? `<p class="sub">${esc(e.reasoning)}</p>` : ""}<p class="sub thinking">Running the untouched original there</p>`).querySelector(".thinking");
+        break;
+      case "reconstruct_adjust":
+        logItem("tm", "", `<h4>Corrected a version to the notebook's date</h4><p class="sub">${esc(e.message)}</p>`);
+        break;
+      case "reconstruct_result": {
+        stopThinking();
+        if (e.ok) {
+          const versions = Object.entries(e.installed || {}).map(([k, v]) => `${k} ${v}`).join(", ");
+          const check = e.vs_saved ? `<p class="sub">Against its saved outputs: ${esc(e.vs_saved)}</p>` : "";
+          logItem("tm", "", `<h4>The original runs in its own time</h4><p>The untouched notebook ran without errors${versions ? ` on ${esc(versions)}` : ""}.</p>${check}`);
+          const hasSaved = [...state.cells.values()].some((c) => c.saved);
+          if (!hasSaved) {
+            state.reference = "reconstructed";
+            for (const [idx, text] of Object.entries(e.outputs || {})) {
+              const c = state.cells.get(Number(idx)); if (!c) continue;
+              c.saved = text; setOutputs(c.el, text, null, "");
+            }
+          }
+        } else {
+          logItem("warn", "", `<h4>Rebuild attempt ${e.attempt} did not work</h4><p class="sub">${esc((e.error || "").split("\n")[0])}</p>`);
+        }
+        break;
+      }
+      case "done": {
+        stopThinking();
+        const [kind, mark, baseTitle] = OUTCOME[e.outcome] || ["bad", "!", e.outcome];
+        const title = (e.reference === "reconstructed" && OUTCOME_RECONSTRUCTED[e.outcome]) || baseTitle;
+        const attempts = e.attempts === 0 ? "" : e.attempts === 1 ? "1 attempt" : `${e.attempts} attempts`;
+        const lead = attempts ? `${attempts}. ` : "";
+        const TEXT = {
+          verified: `${lead}Download the repaired notebook or the full report.`,
+          already_working: "It ran and matched its saved outputs without any change.",
+          runs_unverified: `${lead}The original notebook had no saved outputs, so the results could not be checked.`,
+          drift: `${lead}Some cells now print different results than the author saved. Check the amber cells before trusting this notebook.`,
+          failed: e.last_error || "",
+        };
+        const download = e.outcome === "verified" ? "Download repaired notebook" : "Download notebook";
+        const actions = e.outcome === "failed" ? "" :
+          `<a class="btn" id="dl" href="/api/jobs/${state.jobId}/notebook">${download}</a><a class="btn secondary" id="rep" href="/api/jobs/${state.jobId}/report" target="_blank" rel="noopener">View report</a>`;
+        showVerdict(kind, mark, title, TEXT[e.outcome] ?? "", actions);
+        $("logMeta").textContent = attempts || "no changes";
+        break;
+      }
+      case "error":
+        stopThinking();
+        showVerdict("bad", "!", "The repair stopped with an error", e.message);
+        break;
+    }
+  }
+
+  $("sample").addEventListener("change", sampleNote);
+  $("tm").addEventListener("change", sampleNote);
+  $("run").addEventListener("click", () => start({ sample: $("sample").value, live: false, time_machine: $("tm").checked }));
+  $("live").addEventListener("click", () => start({ sample: $("sample").value, live: true, time_machine: $("tm").checked }));
+  $("file").addEventListener("change", async (ev) => {
+    const f = ev.target.files[0]; if (!f) return;
+    const text = await f.text(); ev.target.value = "";
+    start({ notebook: text, live: true, time_machine: $("tm").checked });
+  });
+  init();
+})();
+</script>
+</body>
+</html>
