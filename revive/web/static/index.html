@@ -237,7 +237,9 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
 .out pre { color: var(--muted); }
 .out .fresh pre { color: var(--ink); }
 .out .detail { font-size: 13px; color: var(--warn); }
-.md { color: var(--muted); font-size: 14px; }
+.out .detail.note { color: var(--ok); }
+.out .detail.note::before { content: "✓ "; }
+.md { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
 .md h2 { font-size: 15px; color: var(--ink); margin: 0; }
 
 /* log */
@@ -632,13 +634,14 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
     }
   }
 
-  function setOutputs(el, saved, fresh, detail) {
+  function setOutputs(el, saved, fresh, detail, note = false) {
     const out = el.querySelector(".out"); if (!out) return;
     let html = "";
     const tag = state.reference === "reconstructed" ? '<span class="tag original" title="printed by the untouched notebook in its rebuilt original environment">original</span>' : '<span class="tag">saved</span>';
     if (saved) html += `<div class="row">${tag}<pre>${esc(saved.trimEnd())}</pre></div>`;
     if (fresh !== null && fresh !== undefined && fresh !== saved) html += `<div class="row fresh"><span class="tag">now</span><pre>${esc(fresh.trimEnd()) || "(no output)"}</pre></div>`;
-    if (detail) html += `<div class="row"><span class="tag"></span><span class="detail">${esc(detail)}</span></div>`;
+    // On a matching cell the detail explains why it still counts as the same (e.g. a harmless formatting change).
+    if (detail) html += `<div class="row"><span class="tag"></span><span class="detail${note ? " note" : ""}">${esc(detail)}</span></div>`;
     out.innerHTML = html;
   }
 
@@ -784,7 +787,7 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
         for (const c of e.cells) {
           setCell(c.cell_index, c.status);
           const cell = state.cells.get(c.cell_index);
-          if (cell) setOutputs(cell.el, c.stored, c.status === "match" ? null : c.fresh, c.status === "match" ? "" : c.detail);
+          if (cell) setOutputs(cell.el, c.stored, c.status === "match" ? null : c.fresh, c.detail, c.status === "match");
         }
         const ok = e.verified, unver = e.unverifiable;
         const ref = e.reference === "reconstructed" ? "the original environment’s outputs" : "the saved outputs";
