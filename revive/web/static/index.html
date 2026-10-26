@@ -3,249 +3,360 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Revive</title>
-<meta name="description" content="Revive repairs broken ML notebooks with NVIDIA Nemotron and proves the fix against the outputs the author saved.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231C2733'/%3E%3Cpath d='M9 17l5 5 9-11' stroke='%235BC08F' stroke-width='3.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Revive · fix old ML notebooks, prove the numbers</title>
+<meta name="description" content="Revive repairs ML notebooks broken by library updates with NVIDIA Nemotron, then re-runs every cell and checks it against the original output.">
+<meta name="theme-color" content="#F5F4EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101315" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314181B'/%3E%3Cpath d='M4 17h7l2.5-6 4 12 3-9 1.8 3H28' stroke='%2334C07F' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root {
-  --bg: #EEF2F0;
-  --panel: #FBFCFB;
-  --ink: #1C2733;
-  --muted: #5B6873;
-  --line: #D3DCD7;
-  --code-bg: #F3F6F4;
-  --ok: #1F6E4A;
-  --ok-soft: #DDEEE5;
-  --bad: #B3261E;
-  --bad-soft: #F7E1DE;
-  --warn: #9A6200;
-  --warn-soft: #F6EAD3;
-  --agent: #3446B8;
-  --agent-soft: #E3E6F8;
-  --time: #0E7069;
-  --time-soft: #DCEFEC;
-  --focus: #3446B8;
-  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --bg: #F5F4EF;
+  --panel: #FFFFFF;
+  --ink: #14181B;
+  --muted: #5F676D;
+  --faint: #8A9297;
+  --line: #E1DFD7;
+  --line-strong: #C9C6BB;
+  --code-bg: #F3F2EC;
+  --ok: #0E7A4C;
+  --ok-soft: #E2F1E8;
+  --bad: #B42318;
+  --bad-soft: #FBE7E4;
+  --warn: #A15C00;
+  --warn-soft: #FBEEDB;
+  --agent: #3546B5;
+  --agent-soft: #E7E9F8;
+  --time: #0B6F69;
+  --time-soft: #DDF0EE;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
+  --radius: 10px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111A20; --panel: #17222A; --ink: #DCE5EA; --muted: #91A0AB; --line: #2A3843;
-    --code-bg: #1C2932; --ok: #5BC08F; --ok-soft: #173326; --bad: #EF7D73; --bad-soft: #3A1E1C;
-    --warn: #E0A84A; --warn-soft: #33281A; --agent: #9AA6FF; --agent-soft: #212848; --focus: #9AA6FF;
-    --time: #52C7BB; --time-soft: #163A37;
+    --bg: #101315; --panel: #171B1E; --ink: #E6E9EA; --muted: #9BA3A8; --faint: #737B80;
+    --line: #262C30; --line-strong: #394146; --code-bg: #1D2226;
+    --ok: #45C389; --ok-soft: #13291F; --bad: #F2857A; --bad-soft: #351B18;
+    --warn: #E5A752; --warn-soft: #322615; --agent: #9DA8FF; --agent-soft: #1F2442;
+    --time: #57C6BC; --time-soft: #132E2C;
     color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body {
-  background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--sans);
-  -webkit-font-smoothing: antialiased;
-}
-a { color: var(--agent); }
-:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--agent); outline-offset: 2px; border-radius: 4px; }
 button, select, input { font: inherit; color: inherit; }
+.mono { font-family: var(--mono); }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
-.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 24px 64px; }
+/* ---------- header ---------- */
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
+.logo svg { width: 44px; height: 22px; overflow: visible; }
+.logo path { fill: none; stroke: var(--ok); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 80; stroke-dashoffset: 0; }
+.logo.beat path { animation: beat 1.1s ease-out; }
+@keyframes beat { 0% { stroke-dashoffset: 80; } 100% { stroke-dashoffset: 0; } }
+.nav-links { display: flex; gap: 18px; font-size: 14px; color: var(--muted); }
+.nav-links a { text-decoration: none; }
+.nav-links a:hover { color: var(--ink); }
 
-/* Header */
-.top { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 22px; }
-.brand { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }
-.brand .pulse { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--ok); margin-left: 6px; vertical-align: 6px; }
-.lede { margin: 0; color: var(--muted); max-width: 64ch; }
-.powered { color: var(--muted); font-size: 13px; text-align: right; }
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 48px; align-items: center; padding: 36px 0 40px; }
+.kicker { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 18px; }
+.kicker b { color: var(--ok); font-weight: 500; }
+h1 { font-size: clamp(32px, 4.6vw, 52px); line-height: 1.06; letter-spacing: -0.035em; margin: 0 0 18px; font-weight: 750; }
+h1 em { font-style: normal; color: var(--ok); }
+.sub { font-size: 18px; color: var(--muted); margin: 0 0 26px; max-width: 46ch; }
+.hero-cta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.proof { font: 13px/1.4 var(--mono); color: var(--muted); }
+.proof b { color: var(--ink); font-weight: 600; }
 
-/* Controls */
-.controls {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center;
-  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+/* before/after illustration */
+.demo { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font: 13px/1.6 var(--mono); }
+.demo-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); border-bottom: 1px solid var(--line); }
+.demo-row:last-child { border-bottom: 0; }
+.demo-row > span { padding: 12px 10px 12px 14px; color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; border-right: 3px solid var(--line); }
+.demo-row > div { padding: 12px 14px; min-width: 0; overflow-wrap: anywhere; }
+.demo-row.bad > span { border-right-color: var(--bad); color: var(--bad); }
+.demo-row.fix > span { border-right-color: var(--agent); color: var(--agent); }
+.demo-row.ok > span { border-right-color: var(--ok); color: var(--ok); }
+.demo .err { color: var(--bad); }
+.demo .del { color: var(--bad); text-decoration: line-through; text-decoration-thickness: 1px; }
+.demo .add { color: var(--ok); }
+.demo .dim { color: var(--muted); }
+.demo .eq { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.demo .pill { font: 600 11px/1 var(--sans); padding: 4px 7px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); }
+
+/* ---------- steps ---------- */
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 44px; }
+.step { padding: 20px 22px 22px 0; }
+.step + .step { padding-left: 22px; border-left: 1px solid var(--line); }
+.step .n { font: 500 12px/1 var(--mono); color: var(--faint); }
+.step h3 { margin: 10px 0 4px; font-size: 16px; letter-spacing: -0.01em; }
+.step p { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* ---------- try ---------- */
+.section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin: 0 0 14px; flex-wrap: wrap; }
+.section-head h2 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+.section-head p { margin: 0; font-size: 14px; color: var(--muted); }
+.picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pick {
+  text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 16px 14px; cursor: pointer; display: grid; gap: 6px; transition: border-color .15s ease, transform .15s ease;
 }
-.controls select {
-  width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel);
-}
-.btn {
-  border: 1px solid var(--ink); background: var(--ink); color: var(--panel); border-radius: 6px;
-  padding: 9px 16px; font-weight: 600; cursor: pointer; white-space: nowrap;
-}
-.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); }
-.btn[disabled] { opacity: .5; cursor: not-allowed; }
-.sample-note { grid-column: 1 / -1; margin: 2px 2px 0; font-size: 13px; color: var(--muted); }
-.tm-toggle { grid-column: 1 / -1; display: flex; gap: 8px; align-items: flex-start; font-size: 14px; margin: 2px 2px 0; cursor: pointer; }
-.tm-toggle input { margin-top: 4px; accent-color: var(--time); }
+.pick:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+.pick[aria-pressed="true"] { border-color: var(--ink); }
+.pick[disabled] { cursor: not-allowed; opacity: .55; transform: none; }
+.pick .tag { font: 500 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.pick.t-error .tag { color: var(--bad); }
+.pick.t-silent .tag { color: var(--warn); }
+.pick.t-tm .tag { color: var(--time); }
+.pick strong { font-size: 16px; letter-spacing: -0.01em; }
+.pick span.d { font-size: 14px; color: var(--muted); }
+.pick .go { font-size: 13px; font-weight: 600; margin-top: 4px; }
+
+.more { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+.more select { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 8px; padding: 10px 16px; font-weight: 600; font-size: 15px; cursor: pointer; white-space: nowrap; text-decoration: none; }
+.btn:hover { opacity: .9; }
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.opts { grid-column: 1 / -1; display: flex; gap: 8px 20px; flex-wrap: wrap; align-items: center; font-size: 14px; color: var(--muted); padding: 0 2px; }
+.tm-toggle { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.tm-toggle input { accent-color: var(--time); width: 16px; height: 16px; margin: 0; }
 .tm-toggle b { color: var(--time); font-weight: 600; }
-.upload { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
-.upload label { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.sample-note { grid-column: 1 / -1; margin: 0 2px; font-size: 13px; color: var(--muted); }
+.sample-note .mono { color: var(--ink); font-size: 12px; }
+.upload label { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
-/* Verdict */
-.verdict {
-  margin: 18px 0 0; padding: 16px 18px; border-radius: 8px; border: 1px solid var(--line);
-  display: none; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; background: var(--panel);
-}
+/* ---------- results ---------- */
+.results { padding-top: 28px; scroll-margin-top: 12px; }
+.verdict { margin: 0 0 14px; padding: 16px 18px; border-radius: var(--radius); border: 1px solid var(--line); display: none; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; align-items: center; background: var(--panel); }
 .verdict.show { display: grid; }
-.verdict .mark { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 20px; }
-.verdict h2 { margin: 0; font-size: 18px; line-height: 1.3; }
+.verdict .mark { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 19px; color: var(--panel); }
+.verdict h2 { margin: 0; font-size: 18px; line-height: 1.3; letter-spacing: -0.01em; }
 .verdict p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
-.verdict.ok { border-color: var(--ok); }
-.verdict.ok .mark { background: var(--ok); color: var(--panel); }
-.verdict.warn { border-color: var(--warn); }
-.verdict.warn .mark { background: var(--warn); color: var(--panel); }
-.verdict.bad { border-color: var(--bad); }
-.verdict.bad .mark { background: var(--bad); color: var(--panel); }
+.verdict.ok { border-color: var(--ok); } .verdict.ok .mark { background: var(--ok); }
+.verdict.warn { border-color: var(--warn); } .verdict.warn .mark { background: var(--warn); }
+.verdict.bad { border-color: var(--bad); } .verdict.bad .mark { background: var(--bad); }
 .verdict .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.verdict .actions a { text-decoration: none; }
-
-.replay-note { margin: 14px 2px 0; font-size: 13px; color: var(--muted); display: none; }
+.replay-note { margin: 0 2px 14px; font-size: 13px; color: var(--muted); display: none; }
 .replay-note.show { display: block; }
 
-/* Main grid */
-.main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; margin-top: 18px; align-items: start; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
-.panel > header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-.panel > header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.main { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; overflow: hidden; }
+.panel > header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.panel > header h3 { margin: 0; font-size: 15px; font-weight: 650; }
 .panel > header span { font-size: 13px; color: var(--muted); }
-.empty { padding: 40px 20px; text-align: center; color: var(--muted); }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
+.empty { padding: 36px 22px; color: var(--muted); font-size: 14px; text-align: center; }
+.empty b { color: var(--ink); }
 
-/* Notebook */
-.cell { display: grid; grid-template-columns: 76px minmax(0, 1fr); border-bottom: 1px solid var(--line); }
+/* notebook */
+.cell { display: grid; grid-template-columns: 72px minmax(0, 1fr); border-bottom: 1px solid var(--line); }
 .cell:last-child { border-bottom: 0; }
-.gutter {
-  padding: 12px 10px 12px 14px; border-right: 3px solid var(--line); font-size: 12px; color: var(--muted);
-  display: flex; flex-direction: column; gap: 6px; transition: border-color .25s ease;
-}
+.gutter { padding: 12px 8px 12px 14px; border-right: 3px solid var(--line); font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; transition: border-color .25s ease; }
 .gutter .n { font-family: var(--mono); }
-.gutter .state { font-weight: 600; font-size: 12px; }
+.gutter .state { font-weight: 600; }
 .cell[data-state="running"] .gutter { border-right-color: var(--agent); }
-.cell[data-state="ran"] .gutter { border-right-color: var(--muted); }
-.cell[data-state="failed"] .gutter { border-right-color: var(--bad); }
-.cell[data-state="failed"] .state { color: var(--bad); }
+.cell[data-state="running"] .state { color: var(--agent); }
+.cell[data-state="ran"] .gutter { border-right-color: var(--faint); }
+.cell[data-state="failed"] .gutter, .cell[data-state="missing"] .gutter { border-right-color: var(--bad); }
+.cell[data-state="failed"] .state, .cell[data-state="missing"] .state { color: var(--bad); }
 .cell[data-state="match"] .gutter { border-right-color: var(--ok); }
 .cell[data-state="match"] .state { color: var(--ok); }
 .cell[data-state="drift"] .gutter, .cell[data-state="changed"] .gutter { border-right-color: var(--warn); }
 .cell[data-state="drift"] .state, .cell[data-state="changed"] .state { color: var(--warn); }
-.cell[data-state="missing"] .gutter { border-right-color: var(--bad); }
-.cell[data-state="missing"] .state { color: var(--bad); }
 .body { padding: 10px 14px 12px; min-width: 0; }
-.edited { display: inline-block; font-size: 11px; font-weight: 600; color: var(--agent); background: var(--agent-soft); padding: 1px 6px; border-radius: 4px; }
-pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; }
-.src { background: var(--code-bg); padding: 8px 10px; border-radius: 4px; }
+.edited { font-size: 11px; font-weight: 600; color: var(--agent); background: var(--agent-soft); padding: 1px 6px; border-radius: 4px; }
+pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break: break-word; }
+.src { background: var(--code-bg); padding: 8px 10px; border-radius: 6px; }
 .out { margin-top: 8px; display: grid; gap: 6px; }
-.out .row { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: start; }
-.out .tag { font-size: 12px; color: var(--muted); padding-top: 1px; }
+.out:empty { display: none; }
+.out .row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; align-items: start; }
+.out .tag { font: 500 11px/1.9 var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: .04em; }
+.out .tag.original { color: var(--time); }
 .out pre { color: var(--muted); }
 .out .fresh pre { color: var(--ink); }
 .out .detail { font-size: 13px; color: var(--warn); }
 .md { color: var(--muted); font-size: 14px; }
-.md h1, .md h2 { font-size: 16px; color: var(--ink); margin: 0; }
+.md h2 { font-size: 15px; color: var(--ink); margin: 0; }
 
-/* Log */
-.log { list-style: none; margin: 0; padding: 6px 0; }
-.log > li { padding: 10px 16px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; }
+/* log */
+.log { list-style: none; margin: 0; padding: 4px 0; }
+.log > li { padding: 11px 16px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 10px; animation: in .25s ease-out; }
 .log > li:last-child { border-bottom: 0; }
-.log .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; background: var(--muted); }
+@keyframes in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.log .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; background: var(--faint); }
 .log .k-run.bad .dot { background: var(--bad); }
-.log .k-run.ok .dot { background: var(--ok); }
+.log .k-run.ok .dot, .log .k-verify.ok .dot { background: var(--ok); }
 .log .k-agent .dot, .log .k-search .dot { background: var(--agent); }
-.log .k-verify.ok .dot { background: var(--ok); }
-.log .k-verify.warn .dot { background: var(--warn); }
-.log .k-warn .dot { background: var(--warn); }
+.log .k-verify.warn .dot, .log .k-warn .dot { background: var(--warn); }
 .log .k-tm .dot { background: var(--time); }
 .log .k-tm h4 { color: var(--time); }
-.out .tag.original { color: var(--time); }
-.log h4 { margin: 0; font-size: 14px; font-weight: 600; }
+.log h4 { margin: 0; font-size: 14px; font-weight: 650; }
 .log p { margin: 2px 0 0; font-size: 14px; }
 .log .sub { color: var(--muted); font-size: 13px; }
 .log .attempt { color: var(--agent); }
 .sources { margin: 6px 0 0; padding: 0; list-style: none; font-size: 13px; display: grid; gap: 3px; }
-.sources a { word-break: break-all; }
-.diff { margin-top: 8px; background: var(--code-bg); border-radius: 4px; padding: 6px 0; }
-.diff pre { padding: 0 10px 0 22px; text-indent: -12px; white-space: pre-wrap; word-break: break-word; }
+.sources a { color: var(--agent); word-break: break-all; }
+.diff { margin-top: 8px; background: var(--code-bg); border-radius: 6px; padding: 6px 0; overflow: hidden; }
+.diff pre { padding: 0 10px 0 22px; text-indent: -12px; }
 .diff .add { background: var(--ok-soft); color: var(--ok); }
 .diff .del { background: var(--bad-soft); color: var(--bad); }
-.diff .hunk { color: var(--muted); }
+.diff .hunk { color: var(--faint); }
 .thinking::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: dots 1.2s steps(4) infinite; }
 @keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
 
-.foot { margin-top: 28px; font-size: 13px; color: var(--muted); max-width: 80ch; }
+/* footer */
+.foot { margin: 56px 0 0; padding: 22px 0 40px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 16px 32px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.foot p { margin: 0; max-width: 70ch; }
+.foot a { text-underline-offset: 3px; }
 
-@media (max-width: 900px) {
+/* ---------- responsive ---------- */
+@media (max-width: 960px) {
+  .hero { grid-template-columns: 1fr; gap: 28px; padding-top: 16px; }
   .main { grid-template-columns: 1fr; }
-  .top { grid-template-columns: 1fr; }
-  .powered { text-align: left; }
 }
-@media (max-width: 560px) {
-  .wrap { padding: 18px 16px 48px; }
-  .controls { grid-template-columns: 1fr 1fr; }
-  .controls select { grid-column: 1 / -1; }
+@media (max-width: 720px) {
+  .wrap { padding: 0 16px; }
+  .steps { grid-template-columns: 1fr; }
+  .step, .step + .step { padding: 16px 0; border-left: 0; }
+  .step + .step { border-top: 1px solid var(--line); }
+  .picks { grid-template-columns: 1fr; }
+  .more { grid-template-columns: 1fr 1fr; }
+  .more select { grid-column: 1 / -1; }
+  .sub { font-size: 17px; }
+  .nav-links .hide-sm { display: none; }
+}
+@media (max-width: 520px) {
   .cell { grid-template-columns: 1fr; }
-  .gutter { border-right: 0; border-bottom: 3px solid var(--line); flex-direction: row; padding: 8px 14px; }
-  .cell[data-state] .gutter { border-right: 0; }
+  .gutter { border-right: 0 !important; border-bottom: 3px solid var(--line); flex-direction: row; align-items: center; padding: 8px 14px; }
   .cell[data-state="failed"] .gutter, .cell[data-state="missing"] .gutter { border-bottom-color: var(--bad); }
   .cell[data-state="match"] .gutter { border-bottom-color: var(--ok); }
   .cell[data-state="drift"] .gutter, .cell[data-state="changed"] .gutter { border-bottom-color: var(--warn); }
-  .verdict { grid-template-columns: auto 1fr; }
+  .cell[data-state="running"] .gutter { border-bottom-color: var(--agent); }
+  .verdict { grid-template-columns: auto minmax(0, 1fr); }
   .verdict .actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .demo-row { grid-template-columns: 54px minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
+  <nav class="nav" aria-label="Main">
+    <a class="logo" id="logo" href="/" aria-label="Revive home">
+      <svg viewBox="0 0 44 22" aria-hidden="true"><path d="M1 12h11l3-7 5 14 4-11 2.5 4H43"/></svg>
+      Revive
+    </a>
+    <div class="nav-links">
+      <a href="#how" class="hide-sm">How it works</a>
+      <a href="#try">Try it</a>
+      <a href="https://github.com/bhavyasharma2/revive" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <header class="hero">
     <div>
-      <h1 class="brand">Revive<span class="pulse" aria-hidden="true"></span></h1>
-      <p class="lede">Repairs ML notebooks that broke when their libraries changed, then proves the fix: every cell is re-run and checked against the output its author saved.</p>
+      <p class="kicker"><b>●</b> Notebook repair, verified</p>
+      <h1>Old ML notebook broke?<br>Revive fixes it, and <em>proves</em> the numbers didn’t change.</h1>
+      <p class="sub">NumPy, pandas and scikit-learn keep removing things. Revive rewrites the broken code with NVIDIA Nemotron, re-runs every cell, and checks each result against the original.</p>
+      <div class="hero-cta">
+        <a class="btn" href="#try">Try a broken notebook</a>
+        <span class="proof"><b>20/20</b> benchmark notebooks verified</span>
+      </div>
     </div>
-    <div class="powered">NVIDIA Nemotron on Nebius Token Factory<br>Web evidence from Tavily</div>
-  </div>
-
-  <div class="controls" role="group" aria-label="Choose a notebook">
-    <select id="sample" aria-label="Broken notebook"></select>
-    <button class="btn" id="run">Repair notebook</button>
-    <button class="btn secondary" id="live" title="Call Nemotron now instead of replaying a recorded run">Run live</button>
-    <label class="tm-toggle"><input type="checkbox" id="tm"><span><b>Time Machine:</b> also rebuild the environment this notebook was written for and run the untouched original there. Notebooks saved without outputs always use it, because that is the only way to know what they should print.</span></label>
-    <p class="sample-note" id="sampleNote"></p>
-    <div class="upload" id="uploadBox" hidden>
-      Or <label for="file">repair your own .ipynb</label> (it runs on this server, so only upload notebooks you trust).
-      <input type="file" id="file" accept=".ipynb,application/json">
+    <div class="demo" aria-label="A real example from the churn notebook: the cell that broke, the fix, and the check">
+      <div class="demo-row bad"><span>Today</span><div>df = df.append(late_signups, ignore_index=True)<br><span class="err">AttributeError: 'DataFrame' object has no attribute 'append'</span></div></div>
+      <div class="demo-row fix"><span>Fix</span><div><span class="del">df = df.append(late_signups, ignore_index=True)</span><br><span class="add">df = pd.concat([df, late_signups], ignore_index=True)</span></div></div>
+      <div class="demo-row ok"><span>Check</span><div class="eq"><span><span class="dim">saved</span> accuracy: 0.9406</span><span><span class="dim">now</span> accuracy: 0.9406</span><span class="pill">matches</span></div></div>
     </div>
-  </div>
+  </header>
 
-  <div class="verdict" id="verdict" role="status" aria-live="polite">
-    <div class="mark" id="verdictMark"></div>
-    <div><h2 id="verdictTitle"></h2><p id="verdictText"></p></div>
-    <div class="actions" id="verdictActions"></div>
-  </div>
-  <p class="replay-note" id="replayNote"></p>
+  <section class="steps" id="how" aria-label="How it works">
+    <div class="step"><span class="n">01 · Run</span><h3>Find what broke</h3><p>Runs the notebook on today’s libraries and stops at the first failing cell.</p></div>
+    <div class="step"><span class="n">02 · Fix</span><h3>Research and patch</h3><p>Tavily finds the changelog; Nemotron writes the smallest fix that works.</p></div>
+    <div class="step"><span class="n">03 · Verify</span><h3>Prove it</h3><p>Every output must match the original. No saved outputs? The Time Machine rebuilds the old environment to get them.</p></div>
+  </section>
 
-  <div class="main">
-    <section class="panel" aria-labelledby="nbTitle">
-      <header><h3 id="nbTitle">Notebook</h3><span id="nbMeta"></span></header>
-      <div id="cells"><p class="empty">Pick a broken notebook and press Repair notebook.</p></div>
-    </section>
-    <section class="panel" aria-labelledby="logTitle">
-      <header><h3 id="logTitle">Repair log</h3><span id="logMeta"></span></header>
-      <ol class="log" id="log" aria-live="polite"></ol>
-    </section>
-  </div>
+  <section id="try" aria-labelledby="tryTitle">
+    <div class="section-head">
+      <h2 id="tryTitle">Try it on a broken notebook</h2>
+      <p>Replays of real runs: instant, nothing to install.</p>
+    </div>
+    <div class="picks" id="picks">
+      <button class="pick t-error" data-sample="legacy_churn_model" aria-pressed="false">
+        <span class="tag">Crashes today</span><strong>A 2021 churn model</strong>
+        <span class="d">Four removed APIs across NumPy, pandas and scikit-learn.</span><span class="go">Repair it →</span>
+      </button>
+      <button class="pick t-silent" data-sample="sklearn_kmeans_silent" aria-pressed="false">
+        <span class="tag">Runs, wrong numbers</span><strong>KMeans clustering</strong>
+        <span class="d">No error at all. A changed default silently gives different clusters.</span><span class="go">Repair it →</span>
+      </button>
+      <button class="pick t-tm" data-sample="sklearn_kmeans_silent_no_outputs" aria-pressed="false">
+        <span class="tag">No saved outputs</span><strong>Same notebook, outputs cleared</strong>
+        <span class="d">Nothing to compare against, so the Time Machine rebuilds 2023 Python first.</span><span class="go">Repair it →</span>
+      </button>
+    </div>
 
-  <p class="foot">Each repair runs the notebook in its own Python environment. A large Nemotron model reads the error, the library versions and the changelog Tavily finds, and writes a patch. A notebook only counts as verified when every cell's fresh output matches the reference within a numeric tolerance: the outputs its author saved or, for a notebook saved without them, the outputs of the untouched original in its rebuilt environment. A fix that runs but changes the numbers is sent back.</p>
+    <div class="more" role="group" aria-label="Choose any notebook">
+      <select id="sample" aria-label="Choose any of the benchmark notebooks"></select>
+      <button class="btn" id="run">Repair</button>
+      <button class="btn secondary" id="live" title="Call Nemotron now instead of replaying a recorded run">Run live</button>
+      <p class="sample-note" id="sampleNote"></p>
+      <div class="opts">
+        <label class="tm-toggle"><input type="checkbox" id="tm"><span><b>Time Machine</b> also check against the rebuilt original environment</span></label>
+        <span class="upload" id="uploadBox" hidden>or <label for="file">repair your own .ipynb</label><input type="file" id="file" accept=".ipynb,application/json"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="results" id="results" aria-label="Repair">
+    <div class="verdict" id="verdict" role="status" aria-live="polite">
+      <div class="mark" id="verdictMark"></div>
+      <div><h2 id="verdictTitle"></h2><p id="verdictText"></p></div>
+      <div class="actions" id="verdictActions"></div>
+    </div>
+    <p class="replay-note" id="replayNote"></p>
+
+    <div class="main">
+      <section class="panel" aria-labelledby="nbTitle">
+        <header>
+          <h3 id="nbTitle">Notebook</h3>
+          <div class="legend" aria-label="Cell colours"><span><i style="background:var(--bad)"></i>failed</span><span><i style="background:var(--agent)"></i>edited</span><span><i style="background:var(--ok)"></i>matches</span><span><i style="background:var(--warn)"></i>numbers changed</span></div>
+        </header>
+        <div id="cells"><p class="empty">Pick a notebook above. Its cells appear here and change colour as Revive <b>runs</b>, <b>fixes</b> and <b>checks</b> them.</p></div>
+      </section>
+      <section class="panel" aria-labelledby="logTitle">
+        <header><h3 id="logTitle">What Revive did</h3><span id="logMeta"></span></header>
+        <ol class="log" id="log" aria-live="polite"></ol>
+        <p class="empty" id="logEmpty">Each step shows up here: the error, the web search, Nemotron’s fix, and the check.</p>
+      </section>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p>Each repair runs in its own isolated Python environment. A notebook only counts as <b>verified</b> when every cell matches the reference within a small numeric tolerance; a fix that runs but changes the numbers is sent back.</p>
+    <p>Built with NVIDIA Nemotron on Nebius Token Factory and Tavily · <a href="https://github.com/bhavyasharma2/revive" target="_blank" rel="noopener">Source on GitHub</a></p>
+  </footer>
 </div>
 
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const state = { samples: [], config: {}, source: null, cells: new Map(), attempts: 0, thinkingEl: null, round: 0, jobId: null, reference: "saved" };
+  const state = { samples: [], config: {}, source: null, cells: new Map(), attempts: 0, thinkingEl: null, round: 0, jobId: null, reference: "saved", busy: false };
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmtDate = (t) => new Date(t * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const shortTitle = (s) => s.title.replace(/\s*\(saved without outputs\)\s*$/i, "");
 
   async function api(path, opts) {
     const res = await fetch(path, opts);
@@ -259,13 +370,15 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
 
   function sampleNote() {
     const s = state.samples.find((x) => x.name === $("sample").value);
-    if (!s) { $("sampleNote").textContent = ""; return; }
+    if (!s) { $("sampleNote").textContent = ""; $("live").hidden = true; return; }
     const recorded = $("tm").checked ? s.recorded_tm_at : s.recorded_at;
-    const replay = recorded ? `A recorded run from ${fmtDate(recorded)} is available, so Repair notebook replays it instantly.` : "No recorded run yet, so this calls Nemotron live.";
-    const dated = s.as_of ? ` Last changed ${s.as_of} (its version-control date).` : "";
-    $("sampleNote").textContent = `What broke: ${s.breaks}.${dated} ${replay}`;
+    const replay = recorded ? "Replays a recorded run." : (state.config.live_enabled ? "No recording yet: this calls Nemotron live." : "No recording yet.");
+    const dated = s.as_of ? ` Last changed ${esc(s.as_of)}.` : "";
+    $("sampleNote").innerHTML = `What broke: <span class="mono">${esc(s.breaks)}</span>.${dated} ${replay}`;
     $("live").hidden = !recorded || !state.config.live_enabled;
   }
+
+  const GROUPS = [["error", "Crashes on today’s libraries"], ["silent", "Runs, but prints different numbers"], ["no_outputs", "Saved without outputs (Time Machine)"]];
 
   async function init() {
     try {
@@ -274,9 +387,15 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
       $("cells").innerHTML = `<p class="empty">Could not reach the server: ${esc(e.message)}</p>`;
       return;
     }
-    $("sample").innerHTML = state.samples.map((s) => `<option value="${esc(s.name)}">${esc(s.title)}</option>`).join("");
-    const preferred = state.samples.find((s) => s.name === "legacy_churn_model");
-    if (preferred) $("sample").value = preferred.name;
+    const known = new Set(GROUPS.map(([k]) => k));
+    const groups = GROUPS.map(([kind, label]) => [label, state.samples.filter((s) => s.kind === kind)]);
+    const other = state.samples.filter((s) => !known.has(s.kind));
+    if (other.length) groups.push(["Other", other]);
+    $("sample").innerHTML = groups.filter(([, list]) => list.length).map(([label, list]) =>
+      `<optgroup label="${esc(label)}">${list.map((s) => `<option value="${esc(s.name)}">${esc(shortTitle(s))}${s.kind === "no_outputs" ? " · outputs cleared" : ""}</option>`).join("")}</optgroup>`).join("");
+    const names = new Set(state.samples.map((s) => s.name));
+    document.querySelectorAll(".pick").forEach((b) => { if (!names.has(b.dataset.sample)) b.hidden = true; });
+    if (names.has("legacy_churn_model")) $("sample").value = "legacy_churn_model";
     sampleNote();
     $("uploadBox").hidden = !state.config.allow_uploads;
   }
@@ -284,17 +403,31 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
   function resetView() {
     if (state.source) state.source.close();
     state.cells.clear(); state.attempts = 0; state.round = 0; state.thinkingEl = null; state.reference = "saved";
-    $("log").innerHTML = ""; $("cells").innerHTML = ""; $("nbMeta").textContent = ""; $("logMeta").textContent = "";
+    $("log").innerHTML = ""; $("cells").innerHTML = ""; $("logMeta").textContent = "";
+    $("logEmpty").hidden = true;
     $("verdict").className = "verdict"; $("replayNote").className = "replay-note";
   }
 
   function setBusy(busy) {
-    $("run").disabled = busy; $("live").disabled = busy; $("sample").disabled = busy; $("tm").disabled = busy;
+    state.busy = busy;
+    ["run", "live", "sample", "tm"].forEach((id) => { $(id).disabled = busy; });
+    document.querySelectorAll(".pick").forEach((b) => { b.disabled = busy; });
     const file = $("file"); if (file) file.disabled = busy;
   }
 
+  function markPick(name) {
+    document.querySelectorAll(".pick").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.sample === name)));
+  }
+
+  function beat() {
+    const logo = $("logo"); logo.classList.remove("beat"); void logo.offsetWidth; logo.classList.add("beat");
+  }
+
   async function start(body) {
+    if (state.busy) return;
     resetView(); setBusy(true);
+    markPick(body.sample || "");
+    state.scrolled = false;
     let job;
     try {
       job = await api("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -304,7 +437,8 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
     }
     state.jobId = job.id;
     if (!job.live && job.recorded_at) {
-      $("replayNote").textContent = `Replaying a live run recorded on ${fmtDate(job.recorded_at)}. Use Run live to call Nemotron now.`;
+      const live = state.config.live_enabled ? " Press Run live to call Nemotron now instead." : "";
+      $("replayNote").textContent = `Replay of a real run recorded on ${fmtDate(job.recorded_at)}.${live}`;
       $("replayNote").className = "replay-note show";
     }
     const source = new EventSource(`/api/jobs/${job.id}/events`);
@@ -320,16 +454,14 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
   }
 
   // ---------- notebook ----------
-  const STATE_LABEL = { pending: "", running: "running", ran: "ran", failed: "failed", match: "matches", drift: "drift", changed: "changed", missing: "missing", extra: "new output", skipped: "" };
+  const STATE_LABEL = { pending: "", running: "running", ran: "ran", failed: "failed", match: "matches", drift: "changed", changed: "changed", missing: "missing", extra: "new output", skipped: "" };
 
   function renderNotebook(cells) {
     const box = $("cells"); box.innerHTML = "";
-    let code = 0;
     for (const c of cells) {
       const el = document.createElement("div");
       el.className = "cell"; el.dataset.state = "pending";
       if (c.type === "code") {
-        code += 1;
         el.innerHTML = `<div class="gutter"><span class="n">[${c.index}]</span><span class="state"></span></div>
           <div class="body"><pre class="src"></pre><div class="out"></div></div>`;
         el.querySelector(".src").textContent = c.source;
@@ -341,7 +473,6 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
       box.appendChild(el);
       state.cells.set(c.index, { el, saved: c.saved_output || "" });
     }
-    $("nbMeta").textContent = `${code} code cells`;
   }
 
   function setOutputs(el, saved, fresh, detail) {
@@ -414,7 +545,13 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
 
   function handle(e) {
     switch (e.type) {
-      case "notebook": renderNotebook(e.cells); break;
+      case "notebook":
+        renderNotebook(e.cells);
+        if (!state.scrolled) {
+          state.scrolled = true;
+          $("results").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+        }
+        break;
       case "run_start": {
         state.round = e.round;
         codeIndices().forEach((i) => setCell(i, "pending"));
@@ -426,7 +563,7 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
         const idx = codeIndices();
         if (e.ok) idx.forEach((i) => setCell(i, "ran"));
         else idx.forEach((i) => setCell(i, i < e.failed_cell ? "ran" : i === e.failed_cell ? "failed" : "pending"));
-        const title = e.round === 0 ? "Ran it with today's libraries" : `Re-ran with attempt ${e.round}`;
+        const title = e.round === 0 ? "Ran it with today’s libraries" : `Re-ran with attempt ${e.round}`;
         logItem("run", e.ok ? "ok" : "bad",
           `<h4>${esc(title)}</h4><p>${e.ok ? "All cells ran without errors." : esc(e.error)}</p><p class="sub">${e.duration_s}s in an isolated environment</p>`);
         break;
@@ -466,22 +603,22 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
           if (cell) setOutputs(cell.el, c.stored, c.status === "match" ? null : c.fresh, c.status === "match" ? "" : c.detail);
         }
         const ok = e.verified, unver = e.unverifiable;
-        const ref = e.reference === "reconstructed" ? "the original environment's outputs" : "the saved outputs";
+        const ref = e.reference === "reconstructed" ? "the original environment’s outputs" : "the saved outputs";
         logItem("verify", ok ? "ok" : "warn",
           `<h4>${ok ? `Every output matches ${ref}` : unver ? "No saved outputs to check" : `Outputs differ from ${ref}`}</h4><p class="sub">${esc(e.summary)}</p>`);
         break;
       }
       case "time_machine":
         logItem("tm", "", `<h4>Time Machine</h4><p>${e.reason === "no saved outputs"
-          ? "This notebook was saved without outputs, so there is nothing to check a fix against. Revive rebuilds the environment it was written for and runs the untouched original there."
+          ? "Saved without outputs, so there is nothing to check a fix against. Revive rebuilds the environment it was written for and runs the untouched original there."
           : "Rebuilding the environment this notebook was written for, to check that its saved outputs can be reproduced."}</p>`);
         break;
       case "reconstruct_env":
         stopThinking();
-        state.thinkingEl = logItem("tm", "", `<h4>Nemotron's estimate: ${esc(e.description)}</h4>${e.as_of ? `<p class="sub">Only packages released before ${esc(e.as_of)}, the notebook's last commit date.</p>` : ""}${e.reasoning ? `<p class="sub">${esc(e.reasoning)}</p>` : ""}<p class="sub thinking">Running the untouched original there</p>`).querySelector(".thinking");
+        state.thinkingEl = logItem("tm", "", `<h4>Nemotron’s estimate: ${esc(e.description)}</h4>${e.as_of ? `<p class="sub">Only packages released before ${esc(e.as_of)}, the notebook’s last commit date.</p>` : ""}${e.reasoning ? `<p class="sub">${esc(e.reasoning)}</p>` : ""}<p class="sub thinking">Running the untouched original there</p>`).querySelector(".thinking");
         break;
       case "reconstruct_adjust":
-        logItem("tm", "", `<h4>Corrected a version to the notebook's date</h4><p class="sub">${esc(e.message)}</p>`);
+        logItem("tm", "", `<h4>Corrected a version to the notebook’s date</h4><p class="sub">${esc(e.message)}</p>`);
         break;
       case "reconstruct_result": {
         stopThinking();
@@ -520,6 +657,7 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
           `<a class="btn" id="dl" href="/api/jobs/${state.jobId}/notebook">${download}</a><a class="btn secondary" id="rep" href="/api/jobs/${state.jobId}/report" target="_blank" rel="noopener">View report</a>`;
         showVerdict(kind, mark, title, TEXT[e.outcome] ?? "", actions);
         $("logMeta").textContent = attempts || "no changes";
+        if (kind === "ok") beat();
         break;
       }
       case "error":
@@ -529,6 +667,10 @@ pre { margin: 0; font: 13px/1.5 var(--mono); white-space: pre-wrap; word-break: 
     }
   }
 
+  document.querySelectorAll(".pick").forEach((b) => b.addEventListener("click", () => {
+    $("sample").value = b.dataset.sample; $("tm").checked = false; sampleNote();
+    start({ sample: b.dataset.sample, live: false, time_machine: false });
+  }));
   $("sample").addEventListener("change", sampleNote);
   $("tm").addEventListener("change", sampleNote);
   $("run").addEventListener("click", () => start({ sample: $("sample").value, live: false, time_machine: $("tm").checked }));
