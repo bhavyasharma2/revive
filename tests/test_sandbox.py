@@ -97,3 +97,28 @@ def test_sandboxed_kernel_cannot_read_secrets(monkeypatch, tmp_path):
     assert "workdir writable" in printed
     assert "sk-should-never-leak" not in printed
     assert (work / "result.txt").read_text() == "ok"
+
+
+@pytest.mark.skipif(not _have_sandbox_user(), reason=f"needs root and a '{SANDBOX_TEST_USER}' user")
+def test_sandboxed_kernel_can_be_interrupted_and_stopped(monkeypatch, tmp_path):
+    """A cell that runs too long must be stopped, even on hosts where root may not signal
+    other users' processes (no CAP_KILL); nothing may be left running afterwards."""
+    import subprocess
+    import time
+
+    monkeypatch.setenv(sandbox.SANDBOX_ENV, SANDBOX_TEST_USER)
+    assert sandbox.active()
+    env = NotebookEnv.create(tmp_path / "venv")
+    work = sandbox.make_workdir(tmp_path / "work")
+    nb = nbformat.v4.new_notebook()
+    nb.cells = [nbformat.v4.new_code_cell("import time\ntime.sleep(120)")]
+    result = execute_notebook(nb, cwd=str(work), timeout=5, kernel_manager_factory=env.kernel_manager)
+    assert not result.ok and result.timed_out
+
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        left = subprocess.run(["pgrep", "-u", SANDBOX_TEST_USER], capture_output=True, text=True).stdout.split()
+        if not left:
+            break
+        time.sleep(0.5)
+    assert left == [], f"sandboxed processes still running: {left}"

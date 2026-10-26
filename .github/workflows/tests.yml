@@ -23,3 +23,5 @@ jobs:
         run: |
           sudo useradd --create-home --shell /usr/sbin/nologin revivesbx
           sudo env "PATH=$PATH" python -m pytest tests/test_sandbox.py -v
+      - name: Same, without CAP_KILL (hosts like Render take it away from root)
+        run: sudo env "PATH=$PATH" setpriv --bounding-set=-kill --inh-caps=-kill python -m pytest tests/test_sandbox.py -v

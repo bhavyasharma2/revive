@@ -135,6 +135,16 @@ h1 em { font-style: normal; color: var(--ok); }
 .pick span.d { font-size: 14px; color: var(--muted); }
 .pick .go { font-size: 13px; font-weight: 600; margin-top: 4px; }
 
+.tmx { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 2fr); gap: 8px 28px; padding: 18px 20px; border: 1px solid var(--line); border-left: 3px solid var(--time); border-radius: var(--radius); background: var(--panel); scroll-margin-top: 12px; }
+.tmx .tag { font: 500 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--time); }
+.tmx-head p { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.tmx-head em { font-style: normal; color: var(--ink); font-weight: 600; }
+.tmx-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; counter-reset: tmx; }
+.tmx-steps li { counter-increment: tmx; display: grid; gap: 4px; align-content: start; }
+.tmx-steps b { font-size: 14px; }
+.tmx-steps b::before { content: counter(tmx, decimal-leading-zero) "  "; font: 500 11px var(--mono); color: var(--time); }
+.tmx-steps span { font-size: 13px; color: var(--muted); }
+.tm-toggle a { color: var(--time); text-underline-offset: 2px; }
 .more { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
 .more select { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 8px; padding: 10px 16px; font-weight: 600; font-size: 15px; cursor: pointer; white-space: nowrap; text-decoration: none; }
@@ -276,7 +286,8 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
 }
 @media (max-width: 720px) {
   .wrap { padding: 0 16px; }
-  .own-grid, .scope { grid-template-columns: 1fr; }
+  .own-grid, .scope, .tmx, .tmx-steps { grid-template-columns: 1fr; }
+  .tmx-steps { gap: 12px; }
   .scope > div + div { border-left: 0; border-top: 1px solid var(--line); }
   .drop { min-height: 140px; }
   .own-row .btn { width: 100%; }
@@ -363,8 +374,20 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
       </button>
       <button class="pick t-tm" data-sample="sklearn_kmeans_silent_no_outputs" aria-pressed="false">
         <span class="tag">No saved outputs</span><strong>Same notebook, outputs cleared</strong>
-        <span class="d">Nothing to compare against, so the Time Machine rebuilds 2023 Python first.</span><span class="go">Repair it →</span>
+        <span class="d">Nothing to compare a fix against, so Revive first goes back in time to get the right answers.</span><span class="go">Repair it →</span>
       </button>
+    </div>
+
+    <div class="tmx" id="timeMachine" aria-labelledby="tmxTitle">
+      <div class="tmx-head">
+        <span class="tag" id="tmxTitle">The Time Machine</span>
+        <p>Many notebooks are shared without their outputs. Then nobody knows what the numbers <em>should</em> be, and a fix that quietly changes them looks fine.</p>
+      </div>
+      <ol class="tmx-steps">
+        <li><b>Dates it</b><span>Nemotron works out the Python and library versions the notebook was written for, from its code and when it was last changed.</span></li>
+        <li><b>Rebuilds it</b><span>Revive installs exactly that old setup, for example Python 3.10 with 2023’s scikit-learn.</span></li>
+        <li><b>Runs the original</b><span>The untouched notebook runs there. Its results become the answer key the fixed notebook has to match.</span></li>
+      </ol>
     </div>
 
     <div class="more" role="group" aria-label="Choose any notebook">
@@ -373,7 +396,7 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
       <button class="btn secondary" id="live" title="Call Nemotron now instead of replaying a recorded run">Run live</button>
       <p class="sample-note" id="sampleNote"></p>
       <div class="opts">
-        <label class="tm-toggle"><input type="checkbox" id="tm"><span><b>Time Machine</b> also check against the rebuilt original environment</span></label>
+        <label class="tm-toggle"><input type="checkbox" id="tm"><span><b>Time Machine</b> also rebuild the original setup and check against it (<a href="#timeMachine">what is this?</a>)</span></label>
       </div>
     </div>
   </section>
