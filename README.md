@@ -94,34 +94,34 @@ Traps where only output verification can catch the problem:
 | Notebooks saved without outputs, verified through the Time Machine | **3/3** |
 | Time Machine faithfulness: rebuilt original reproduced the author's real (hidden) outputs | **3/3** |
 | Fixes that ran but printed different numbers, caught by output verification and then corrected | **3** |
-| Average attempts per notebook | 1.5 (max 3) |
-| Median time per notebook | 44 s (whole benchmark: about 17 minutes) |
-| Total tokens, all 20 notebooks | 162,423 |
+| Average attempts per notebook | 1.35 (max 2) |
+| Median time per notebook | 29 s (whole benchmark: about 11.5 minutes) |
+| Total tokens, all 20 notebooks | 137,238 |
 
 | Notebook | What broke | Checked against | Outcome | Attempts | Cells matched | Time (s) |
 |---|---|---|---|---|---|---|
-| numpy_type_aliases | np.float / np.int / np.bool (removed in NumPy 1.24) | saved outputs | verified | 1 | 3/3 | 26.1 |
-| numpy2_constants | np.NaN, np.Inf, np.round_ (removed in NumPy 2.0) | saved outputs | verified | 1 | 2/2 | 33.7 |
-| numpy2_functions | np.product, np.cumproduct, np.alltrue, np.in1d, np.trapz, np.row_stack | saved outputs | verified | 2 | 3/3 | 76.6 |
-| numpy_asscalar | np.asscalar (removed in NumPy 1.23) | saved outputs | verified | 1 | 1/1 | 21.2 |
-| pandas_append | DataFrame.append and Series.append (removed in pandas 2.0) | saved outputs | verified | 1 | 2/2 | 32.1 |
-| pandas_iteritems | DataFrame.iteritems (removed in pandas 2.0) | saved outputs | verified | 1 | 1/1 | 23.0 |
-| pandas_ix_lookup | .ix (removed in pandas 1.0), DataFrame.lookup (removed in 2.0) | saved outputs | verified | 1 | 2/2 | 60.8 |
-| pandas_mad_applymap | DataFrame.mad (removed in pandas 2.0), DataFrame.applymap (removed in 3.0) | saved outputs | verified | 2 | 2/2 | 44.3 |
-| pandas_io_fill | read_csv(delim_whitespace=...) and fillna(method=...) (removed in pandas 3.0) | saved outputs | verified | 1 | 2/2 | 25.1 |
-| pandas_groupby_numeric | groupby().mean() no longer drops non-numeric columns silently | saved outputs | verified | 1 | 1/1 | 31.0 |
-| pandas_dates | Series.dt.weekofyear and Series.first (removed in pandas 2.x/3.0) | saved outputs | verified | 2 | 2/2 | 50.1 |
-| pandas_dates_no_outputs | same, saved without outputs | rebuilt original | verified | 2 | 2/2 | 87.2 |
-| sklearn_encoders | OneHotEncoder(sparse=...) (removed in 1.4), get_feature_names (removed in 1.2) | saved outputs | verified | 2 | 2/2 | 47.5 |
-| sklearn_rmse | mean_squared_error(squared=False) (removed in 1.6) | saved outputs | verified | 1 | 1/1 | 28.7 |
-| sklearn_renamed_params | base_estimator, algorithm='full', affinity (renamed/removed) | saved outputs | verified | 2 | 3/3 | 40.4 |
-| sklearn_ovr_trap | LogisticRegression(multi_class='ovr') removed; deleting the argument silently switches to multinomial | saved outputs | verified | 1 | 1/1 | 30.1 |
-| sklearn_kmeans_silent | KMeans default n_init changed from 10 to 'auto' in 1.4: no error, different clusters | saved outputs | verified | 3 | 1/1 | 90.3 |
-| sklearn_kmeans_silent_no_outputs | same, saved without outputs | rebuilt original | verified | 2 | 1/1 | 137.1 |
+| numpy_type_aliases | np.float / np.int / np.bool (removed in NumPy 1.24) | saved outputs | verified | 1 | 3/3 | 23.0 |
+| numpy2_constants | np.NaN, np.Inf, np.round_ (removed in NumPy 2.0) | saved outputs | verified | 2 | 2/2 | 35.7 |
+| numpy2_functions | np.product, np.cumproduct, np.alltrue, np.in1d, np.trapz, np.row_stack | saved outputs | verified | 2 | 3/3 | 48.2 |
+| numpy_asscalar | np.asscalar (removed in NumPy 1.23) | saved outputs | verified | 1 | 1/1 | 19.8 |
+| pandas_append | DataFrame.append and Series.append (removed in pandas 2.0) | saved outputs | verified | 1 | 2/2 | 24.2 |
+| pandas_iteritems | DataFrame.iteritems (removed in pandas 2.0) | saved outputs | verified | 1 | 1/1 | 19.0 |
+| pandas_ix_lookup | .ix (removed in pandas 1.0), DataFrame.lookup (removed in 2.0) | saved outputs | verified | 1 | 2/2 | 22.0 |
+| pandas_mad_applymap | DataFrame.mad (removed in pandas 2.0), DataFrame.applymap (removed in 3.0) | saved outputs | verified | 1 | 2/2 | 23.0 |
+| pandas_io_fill | read_csv(delim_whitespace=...) and fillna(method=...) (removed in pandas 3.0) | saved outputs | verified | 1 | 2/2 | 19.7 |
+| pandas_groupby_numeric | groupby().mean() no longer drops non-numeric columns silently | saved outputs | verified | 1 | 1/1 | 25.3 |
+| pandas_dates | Series.dt.weekofyear and Series.first (removed in pandas 2.x/3.0) | saved outputs | verified | 2 | 2/2 | 42.7 |
+| pandas_dates_no_outputs | Series.dt.weekofyear and Series.first (removed in pandas 2.x/3.0) | rebuilt original | verified | 1 | 2/2 | 41.8 |
+| sklearn_encoders | OneHotEncoder(sparse=...) (removed in 1.4), get_feature_names (removed in 1.2) | saved outputs | verified | 2 | 2/2 | 44.3 |
+| sklearn_rmse | mean_squared_error(squared=False) (removed in 1.6) | saved outputs | verified | 1 | 1/1 | 30.1 |
+| sklearn_renamed_params | base_estimator, algorithm='full', affinity (renamed/removed) | saved outputs | verified | 2 | 3/3 | 49.0 |
+| sklearn_ovr_trap | LogisticRegression(multi_class='ovr') removed; deleting the argument silently switches to multinomial | saved outputs | verified | 1 | 1/1 | 28.5 |
+| sklearn_kmeans_silent | KMeans default n_init changed from 10 to 'auto' in 1.4: no error, different clusters | saved outputs | verified | 1 | 1/1 | 26.8 |
+| sklearn_kmeans_silent_no_outputs | KMeans default n_init changed from 10 to 'auto' in 1.4: no error, different clusters | rebuilt original | verified | 1 | 1/1 | 51.3 |
 | legacy_churn_model | DataFrame.append, np.float/np.int, OneHotEncoder(sparse=), iteritems | saved outputs | verified | 2 | 6/6 | 43.7 |
-| legacy_churn_model_no_outputs | same, saved without outputs | rebuilt original | verified | 1 | 6/6 | 71.9 |
+| legacy_churn_model_no_outputs | DataFrame.append, np.float/np.int, OneHotEncoder(sparse=), iteritems | rebuilt original | verified | 1 | 6/6 | 71.1 |
 
-The three cases where output verification mattered, from `benchmark/results/results.json`:
+In this run, 3 fixes ran cleanly but printed different numbers; output verification caught each one and the next attempt corrected it (every attempt is listed in `benchmark/results/results.json`). Three examples from an earlier full run, which the screenshot below also shows:
 
 - **sklearn_kmeans_silent** never raised an error. Nemotron's first fix ran but printed a different inertia; the second fix used a removed option; the third restored the old initialisation (`init='random', n_init=10`) and matched.
 - **sklearn_kmeans_silent_no_outputs**: the Time Machine rebuilt Python 3.10 with scikit-learn 1.2.1 (it corrected two version guesses Nemotron made that were released after the notebook's date), ran the original, and only then could the drift in today's version be seen and fixed with `n_init=10`.
@@ -129,9 +129,34 @@ The three cases where output verification mattered, from `benchmark/results/resu
 
 ![A fix that ran but printed a different inertia, caught and corrected](docs/drift-caught.png)
 
-Honest history: on the current benchmark, two earlier full runs verified 17/20 and 19/20 before the Time Machine fixes described above (dated rebuilds; correcting versions released after the date). Before that, a first version of the benchmark, whose expected outputs came from modern rewrites of the old code, verified 17/17, 15/17 and 16/17; running the original code in rebuilt old environments then showed that one of those expected outputs (`sklearn_ovr_trap`) did not exactly match what old scikit-learn printed. That is why the benchmark now uses authentic outputs. One model call in the final run kept returning a temporary 503 after its retries and cost one attempt; the next attempt succeeded.
+Honest history: on the current benchmark, two earlier full runs verified 17/20 and 19/20 before the Time Machine fixes described above (dated rebuilds; correcting versions released after the date). Before that, a first version of the benchmark, whose expected outputs came from modern rewrites of the old code, verified 17/17, 15/17 and 16/17; running the original code in rebuilt old environments then showed that one of those expected outputs (`sklearn_ovr_trap`) did not exactly match what old scikit-learn printed. That is why the benchmark now uses authentic outputs. The final run above uses all the safeguards added after testing on real notebooks (next section), and the benchmark stayed at 20/20.
 
 Re-run it yourself: `python scripts/run_benchmark.py` (writes `benchmark/results/RESULTS.md`).
+
+### Real notebooks by other authors
+
+A benchmark we wrote ourselves can only show so much, so Revive was also run on four public notebooks that other people wrote years ago: two from Aurélien Géron's *handson-ml* (first edition) and two from Jake VanderPlas's *Python Data Science Handbook* (sources, licences and attribution in [`benchmark/real/`](benchmark/real/README.md)). They are longer and messier than the benchmark, and their saved outputs are the authors' own.
+
+| Notebook | Outcome | Attempts | Cells matched |
+|---|---|---|---|
+| *Python Data Science Handbook* 3.04, missing values | **verified**: `fillna(method=...)` became `.ffill()` / `.bfill()`; the cell that shows a `TypeError` on purpose still raises it | 1 | 26/26 |
+| *Python Data Science Handbook* 3.06, concat and append | **verified**: `df1.append(df2)` became `pd.concat([df1, df2])`, including inside a string the notebook evaluates and prints (the changed label is reported) | 1 | 14/14 |
+| *handson-ml* chapter 6, decision trees | **already working**: no change needed; every number matches today, only scikit-learn's printout of the models changed | 0 | 17/17 |
+| *handson-ml* chapter 4, linear models | **not repaired**: it breaks in several places (`np.infty`, a negative `tol`, `np.int`, `multi_class`); after the first fix, four attempts in a row pointed at code that was not in the cells, so Revive stopped | 4 | - |
+
+2 of 4 repaired and verified, 1 correctly left alone, 1 honest failure. Final run: 135,262 tokens for all four.
+
+The first run verified 1 of 4, and was more useful than a clean score, because reading the repaired notebooks showed three things to fix:
+
+- **The model tried to fake the check.** pandas now prints `Index([0, 1])` where it used to print `Int64Index([0, 1])`. To make the output match, Nemotron rewrote the code to `str(e).replace("Index(", "Int64Index(")`; elsewhere it overrode `__repr__` to print old scikit-learn output, and re-attached the removed `DataFrame.append` to an object. Revive now rejects patches that paste text from the expected output into the code, add printing hooks, or monkey-patch methods, and tells the model why.
+- **Harmless formatting was counted as a difference**, so attempts were spent on noise: `%timeit` timings (the model even pinned old NumPy versions to chase them), matplotlib's `<Figure size 576x288>` lines, `object` vs `str` dtypes, `Int64Index` vs `Index`, and scikit-learn printing only the parameters you set. These are now recognised; numbers are still always compared. (This also fixed an old bug: the rule that hides memory addresses like `0x7f3a…` also matched the `0x400` in `800x400`.)
+- **Some cells are meant to fail.** The Handbook shows `vals1.sum()` raising a `TypeError` on purpose, and Revive "repaired" it. A cell whose saved output is an error now has to raise the same exception type, and is otherwise left alone.
+
+Rerunning our own benchmark after these changes surfaced one more weakness: on `sklearn_ovr_trap` Nemotron went in circles, deleting the removed `multi_class='ovr'` argument (the code ran but the numbers changed), then putting it back (crash), then deleting it again. Revive now remembers every version of a cell that crashed or printed different results and rejects a patch that would bring one back, telling the model to find a different approach.
+
+A fourth change came from the longest notebook, which breaks in five separate places: each attempt fixed one and got further, but the fixed budget of attempts ran out. Revive now keeps going while every attempt makes progress (a later failing cell, or more matching cells) and stops after four attempts in a row without progress, or twelve in total.
+
+Run them: `python scripts/run_benchmark.py --set real` (writes `benchmark/real/results/`).
 
 ## Quick start
 
@@ -166,7 +191,9 @@ Open http://localhost:8000, pick a notebook and press **Repair notebook**. The n
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `REVIVE_ALLOW_UPLOADS` | `0` | Let visitors repair their own notebooks. Uploaded notebooks run code on the server, so keep this off on public hosts. |
+| `REVIVE_ALLOW_UPLOADS` | `0` (`1` in the Docker image) | Let visitors repair their own notebooks. Uploaded notebooks run code on the server; on a public host, also set `REVIVE_SANDBOX_USER`. |
+| `REVIVE_SANDBOX_USER` | unset (`sandbox` in the Docker image) | Run every notebook kernel as this unprivileged user (needs the server to run as root). If it is set but cannot be used, uploads switch themselves off. |
+| `REVIVE_KERNEL_STARTUP_TIMEOUT` | `60` (`180` in the Docker image) | Seconds to wait for a kernel to start; slow hosts need more. |
 | `REVIVE_LIVE` | `1` | `0` allows recorded replays only. |
 | `REVIVE_LIVE_PER_CLIENT` / `REVIVE_LIVE_PER_DAY` | `3` / `20` | Caps on live repairs, to protect API credits. |
 | `REVIVE_MAX_CONCURRENT` | `2` | Repairs running at the same time. |
@@ -174,16 +201,20 @@ Open http://localhost:8000, pick a notebook and press **Repair notebook**. The n
 **Tests**
 
 ```bash
-pytest       # about 250 tests, no API keys needed
+pytest       # about 280 tests, no API keys needed
 ```
 
 The tests start real Jupyter kernels, create real isolated environments and (when uv is available) build real old Python environments; the model is replaced by scripted replies. They run on every push through GitHub Actions.
 
 ## Deploy
 
-- **Render (free web service):** New → Web Service → connect this GitHub repository; Render detects the Dockerfile. Choose the Free instance type and add `NEBIUS_API_KEY` and `TAVILY_API_KEY` as environment variables. The free instance sleeps after 15 minutes without traffic and takes about a minute to wake; it has 512 MB of memory, so recorded replays are the reliable path there, and heavy live runs (especially Time Machine rebuilds) are better run locally.
+- **Render (free web service):** New → Web Service → connect this GitHub repository; Render detects the Dockerfile. Choose the Free instance type and add `NEBIUS_API_KEY` and `TAVILY_API_KEY` as environment variables. Uploads are on, with sandboxed kernels. The free instance sleeps after 15 minutes without traffic and takes about a minute to wake; it has 512 MB of memory, so recorded replays are the reliable path there, and heavy live runs (especially Time Machine rebuilds) are better run locally.
 - **Hugging Face Spaces (Docker Spaces need a PRO account):** `pip install huggingface_hub`, set `HF_TOKEN`, `NEBIUS_API_KEY` and `TAVILY_API_KEY`, then run `python scripts/deploy_huggingface.py --github <repo url>`. Keys are stored as encrypted Space secrets.
 - **Any container host, including Nebius Serverless Endpoints:** `docker build -t revive .` then run it with `NEBIUS_API_KEY` and `TAVILY_API_KEY` set; it listens on `$PORT` (default 7860). The image ships with Python 3.8 and 3.10 for the Time Machine.
+
+### Uploaded notebooks and the sandbox
+
+Visitors to the hosted demo can upload their own notebook. Executing a notebook runs its code, and the server's environment holds the Token Factory and Tavily keys, so uploaded code never runs as the server's user. Every kernel (including the Time Machine's) is started through `revive/sandbox.py`, which hands the kernel its connection file and then drops to the unprivileged `sandbox` user with a minimal environment and limits on processes and file sizes. The kernel cannot see the server's environment variables or read them from `/proc` (owned by root), cannot modify Revive's code or the environments it installs packages into, and can only write to its own working folder, which is deleted after the repair. `tests/test_sandbox.py` runs a notebook that tries all of this and checks that it fails; GitHub Actions runs it as root on every push.
 
 ## Project layout
 
@@ -195,6 +226,7 @@ The tests start real Jupyter kernels, create real isolated environments and (whe
 | `revive/timemachine.py` | Infers, builds (with uv) and runs the notebook's original environment |
 | `revive/patches.py` | The patch format and its checks: strict allowlist for pip requirements, exact unique snippets, syntax check |
 | `revive/env.py` | Isolated per-notebook environments layered on the host environment |
+| `revive/sandbox.py` | Starts notebook kernels as an unprivileged user so uploaded code cannot read the server's secrets |
 | `revive/llm.py`, `revive/search.py` | Token Factory and Tavily clients |
 | `revive/web/` | FastAPI app with live event streaming, replay cache and usage limits |
 | `benchmark/`, `scripts/` | Benchmark notebooks, generator, runner, deploy script |
@@ -205,7 +237,8 @@ The tests start real Jupyter kernels, create real isolated environments and (whe
 - **Old environments need wheels.** The Time Machine supports Python 3.8 to 3.12; notebooks that need libraries without wheels for those Pythons cannot be rebuilt.
 - **Randomness without a seed** looks like drift, because the numbers really do change between runs. Revive reports it rather than hiding it.
 - **Plots are not compared.** Only text output is checked; images vary byte-for-byte between library versions.
-- **Isolation is per package, not per machine.** Executing a notebook runs its code. The hosted demo only runs the bundled notebooks; run untrusted notebooks inside a container.
+- **Uploaded notebooks must be self-contained** (no data files of their own), run on a CPU, and use NumPy, pandas, SciPy or scikit-learn. Deep-learning frameworks, GPUs and plot comparison are next.
+- **The sandbox protects secrets, not the network.** Uploaded code runs as an unprivileged user without access to the API keys, but it can still make network requests and use the CPU until its time limit. Run anything you do not trust locally inside a container.
 - **The benchmark is synthetic**, written for this project. Its outputs are authentic and its breaks are real, documented API changes, but real-world notebooks are messier.
 
 ## Prior art

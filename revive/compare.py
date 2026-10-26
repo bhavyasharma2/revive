@@ -9,6 +9,7 @@ against what was stored, with a numeric tolerance.
 
 from __future__ import annotations
 
+import difflib
 import math
 import re
 from dataclasses import dataclass, field
@@ -21,17 +22,33 @@ DEFAULT_RTOL = 1e-3
 DEFAULT_ATOL = 1e-8
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
-_ADDR_RE = re.compile(r"0x[0-9a-fA-F]+")
+_ADDR_RE = re.compile(r"\b0x[0-9a-fA-F]+")  # a memory address, not the "0x400" in "800x400"
 
 # NumPy 2 changed scalar reprs: ``0.5`` became ``np.float64(0.5)``. Notebooks
 # saved before that change would otherwise look different for purely cosmetic
 # reasons, so these wrappers are removed before comparing.
 _NUMPY_SCALAR_RE = re.compile(r"\b(?:np|numpy)\.(?:float|int|uint|bool|complex|str)\w*\(([^()]*)\)")
 
-# Lines whose content depends on the machine or the clock, not on the result.
+# Lines whose content depends on the machine or the clock, not on the result
+# (including %timeit's "2.87 ms ± 17.1 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)").
 _VOLATILE_LINE_RE = re.compile(
-    r"(wall time|cpu times|\bit/s\b|\bs/it\b|\d+%\||ms/step|\bETA\b|elapsed|runtime:)",
+    r"(wall time|cpu times|\bit/s\b|\bs/it\b|\d+%\||ms/step|\bETA\b|elapsed|runtime:"
+    r"|per loop|loops each|best of \d+)",
     re.IGNORECASE,
+)
+
+# Plots are not compared, and a figure's text stand-in ("<Figure size 576x288 with 1 Axes>")
+# changes with matplotlib's default resolution, not with the result.
+_FIGURE_LINE_RE = re.compile(r"^<Figure size [\d.]+x[\d.]+ with \d+ Axes>$")
+
+# Formatting that libraries changed without changing any value. Each pair maps an
+# old or new spelling to one canonical form; numbers are never touched.
+_COSMETIC_SUBS = (
+    # pandas 2.0 removed Int64Index/UInt64Index/Float64Index: the same index now prints as Index.
+    (re.compile(r"\b(?:Int64|UInt64|Float64)Index\("), "Index("),
+    # pandas 3.0 stores text as its own string dtype instead of object.
+    (re.compile(r"dtype: str\b"), "dtype: object"),
+    (re.compile(r"dtype='str'"), "dtype='object'"),
 )
 
 # A number that is not glued to a letter, digit, underscore or dot on its left.
@@ -167,15 +184,104 @@ def normalize_text(text: str) -> str:
     text = _ANSI_RE.sub("", text)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = _NUMPY_SCALAR_RE.sub(r"\1", text)
+    for pattern, replacement in _COSMETIC_SUBS:
+        text = pattern.sub(replacement, text)
     lines: list[str] = []
     for line in text.split("\n"):
         if _VOLATILE_LINE_RE.search(line):
             continue
         line = _ADDR_RE.sub("0xADDR", line)
         line = re.sub(r"\s+", " ", line).strip()
-        if line:
+        if line and not _FIGURE_LINE_RE.match(line):
             lines.append(line)
     return "\n".join(lines)
+
+
+# ---------- scikit-learn estimator printouts ----------
+# Since scikit-learn 0.23 an estimator prints only the parameters that differ from
+# their defaults; older versions printed every parameter. The two describe the
+# same model when every parameter the new printout shows appears, with the same
+# value, in the old one.
+_ESTIMATOR_RE = re.compile(r"^([A-Z][A-Za-z0-9_]*)\((.*)\)$", re.S)
+
+
+def _split_args(text: str) -> Optional[list[str]]:
+    parts, depth, quote, start = [], 0, "", 0
+    for i, ch in enumerate(text):
+        if quote:
+            if ch == quote:
+                quote = ""
+        elif ch in "'\"":
+            quote = ch
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+            if depth < 0:
+                return None
+        elif ch == "," and depth == 0:
+            parts.append(text[start:i].strip())
+            start = i + 1
+    if depth or quote:
+        return None
+    tail = text[start:].strip()
+    if tail:
+        parts.append(tail)
+    return parts
+
+
+def _estimator_params(text: str) -> Optional[tuple[str, dict[str, str]]]:
+    m = _ESTIMATOR_RE.match(text.strip())
+    if not m:
+        return None
+    args = _split_args(m.group(2))
+    if args is None:
+        return None
+    params: dict[str, str] = {}
+    for arg in args:
+        key, sep, value = arg.partition("=")
+        if not sep or not key.strip().isidentifier():
+            return None
+        params[key.strip()] = value.strip()
+    return m.group(1), params
+
+
+def _same_value(old: str, new: str) -> bool:
+    """Equal parameter values, allowing for nested estimators and for long lists the
+    new printout shortens with "..." (every element it does show must be in the old one, in order)."""
+    a, b = re.sub(r"\s+", "", old), re.sub(r"\s+", "", new)
+    if a == b or _same_estimator(old, new):
+        return True
+    if "..." not in b:
+        return False
+    pieces = b.split("...")
+    if not a.startswith(pieces[0]) or not a.endswith(pieces[-1]):
+        return False
+    position = len(pieces[0])
+    for piece in pieces[1:-1]:
+        found = a.find(piece, position)
+        if found < 0:
+            return False
+        position = found + len(piece)
+    return position <= len(a) - len(pieces[-1])
+
+
+def _same_estimator(old: str, new: str) -> bool:
+    """True when ``new`` (changed-only printout) describes the model ``old`` printed in full."""
+    a, b = _estimator_params(old.replace("\n", " ")), _estimator_params(new.replace("\n", " "))
+    if a is None or b is None or a[0] != b[0] or not b[1].keys() <= a[1].keys():
+        return False
+    return all(_same_value(a[1][key], value) for key, value in b[1].items())
+
+
+def _same_estimator_output(old: str, new: str) -> bool:
+    """An estimator printout, possibly after or before identical lines (progress messages)."""
+    a, b = old.split("\n"), new.split("\n")
+    while a and b and a[0] == b[0]:
+        a, b = a[1:], b[1:]
+    while a and b and a[-1] == b[-1]:
+        a, b = a[:-1], b[:-1]
+    return bool(a) and bool(b) and _same_estimator("\n".join(a), "\n".join(b))
 
 
 def split_numbers(text: str) -> tuple[str, list[float]]:
@@ -239,6 +345,8 @@ def compare_text(
     b = normalize_text(fresh)
     if a == b:
         return Status.MATCH, 0.0, ""
+    if _same_estimator_output(a, b):
+        return Status.MATCH, 0.0, "same model; newer scikit-learn prints only the parameters that were set"
 
     skeleton_a, tokens_a = _split_tokens(a)
     skeleton_b, tokens_b = _split_tokens(b)
@@ -291,6 +399,49 @@ def matching_cells(
     return found
 
 
+# ---------- notebooks that print their own code ----------
+# Some notebooks print code they evaluate, e.g. display('df1.append(df2)') shows the
+# expression above its result. Fixing that expression necessarily changes the label.
+_CODE_STRING_RE = re.compile(r"'((?:[^'\\\n]|\\.)*)'" + r'|"((?:[^"\\\n]|\\.)*)"')
+
+
+def _code_strings(source: str) -> list[str]:
+    found = []
+    for match in _CODE_STRING_RE.finditer(source):
+        value = match.group(1) if match.group(1) is not None else match.group(2)
+        if value and "(" in value:  # an expression, not data such as a column name
+            found.append(value)
+    return found
+
+
+def _renamed_code_strings(old_source: str, new_source: str) -> list[tuple[str, str]]:
+    old, new = _code_strings(old_source), _code_strings(new_source)
+    pairs = []
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(a=old, b=new, autojunk=False).get_opcodes():
+        if tag == "replace" and i2 - i1 == j2 - j1:
+            pairs.extend(zip(old[i1:i2], new[j1:j2]))
+    return pairs
+
+
+def _explain_own_code(stored: str, fresh: str, old_source: str, new_source: str, rtol: float, atol: float) -> Optional[str]:
+    """If the only differences are code strings the fix rewrote and the notebook prints, say which."""
+    pairs = [(o, n) for o, n in _renamed_code_strings(old_source, new_source) if o in stored]
+    if not pairs:
+        return None
+    for old, new in pairs:
+        stored = stored.replace(old, new)
+    if compare_text(stored, fresh, rtol=rtol, atol=atol)[0] != Status.MATCH:
+        return None
+    return "; ".join(f"the notebook prints its own code, which the fix changed: {o!r} -> {n!r}" for o, n in pairs)
+
+
+def _error_name(cell: Any) -> str:
+    for output in cell.get("outputs", []):
+        if output.get("output_type") == "error":
+            return str(output.get("ename") or "")
+    return ""
+
+
 def compare_notebooks(
     original: NotebookNode,
     executed: NotebookNode,
@@ -321,7 +472,16 @@ def compare_notebooks(
         has_stored = bool(normalize_text(stored))
         has_fresh = bool(normalize_text(fresh))
 
-        if not has_stored and not has_fresh:
+        stored_error, fresh_error = _error_name(before), _error_name(after)
+        if stored_error and fresh_error != stored_error:
+            status, rel, detail = Status.CHANGED, 0.0, (
+                f"the original raised {stored_error} here; the re-run "
+                + (f"raised {fresh_error}" if fresh_error else "raised nothing")
+            )
+        elif stored_error and not has_stored and not has_fresh:
+            # Shown on purpose by the author, and it still happens.
+            status, rel, detail = Status.MATCH, 0.0, f"raised {stored_error}, as in the original"
+        elif not has_stored and not has_fresh:
             status, rel, detail = Status.SKIPPED, 0.0, ""
         elif has_stored and not has_fresh:
             status, rel, detail = Status.MISSING, 0.0, "the re-run produced no output for this cell"
@@ -329,6 +489,10 @@ def compare_notebooks(
             status, rel, detail = Status.EXTRA, 0.0, "the original had no output for this cell"
         else:
             status, rel, detail = compare_text(stored, fresh, rtol=rtol, atol=atol)
+            if status in (Status.DRIFT, Status.CHANGED) and before.source != after.source:
+                explained = _explain_own_code(stored, fresh, before.source, after.source, rtol, atol)
+                if explained:
+                    status, rel, detail = Status.MATCH, 0.0, explained
 
         report.cells.append(
             CellComparison(

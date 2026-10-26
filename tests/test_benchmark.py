@@ -111,3 +111,37 @@ def test_reconstruction_faithfulness_is_measured_against_the_hidden_real_outputs
     wrong = SimpleNamespace(reconstruction=Reconstruction(ok=True, spec=EnvSpec("3.10"), reference=execute_notebook(strip_outputs(real), timeout=60).notebook))
     assert bench.reconstruction_vs_real(wrong, entry).startswith("NOT verified")   # today's sklearn is not the original
     assert bench.reconstruction_vs_real(good, {"kind": "error"}) is None
+
+
+REAL = BENCH / "real"
+
+
+def test_real_notebooks_are_credited_and_present():
+    entries = json.loads((REAL / "manifest.json").read_text(encoding="utf-8"))
+    files = sorted(p.stem for p in (REAL / "notebooks").glob("*.ipynb"))
+    assert sorted(e["name"] for e in entries) == files
+    for e in entries:
+        assert e["kind"] == "real"
+        assert e["source"].startswith("https://github.com/")
+        assert e["author"] and e["license"] and e["breaks"] and e["title"]
+    assert (REAL / "licenses" / "handson-ml-LICENSE.txt").exists()
+    assert (REAL / "licenses" / "PythonDataScienceHandbook-LICENSE-CODE.txt").exists()
+    readme = (REAL / "README.md").read_text(encoding="utf-8")
+    assert all(e["name"] in readme for e in entries)
+
+
+def test_handbook_notebooks_hold_only_code_cells_and_a_credit():
+    for name in ("pdsh_03_04_missing_values", "pdsh_03_06_concat_and_append"):
+        nb = json.loads((REAL / "notebooks" / f"{name}.ipynb").read_text(encoding="utf-8"))
+        first, rest = nb["cells"][0], nb["cells"][1:]
+        assert first["cell_type"] == "markdown" and "VanderPlas" in "".join(first["source"])
+        assert rest and all(c["cell_type"] == "code" for c in rest)
+
+
+def test_app_lists_real_notebooks():
+    from fastapi.testclient import TestClient
+    from revive.web.app import create_app
+
+    client = TestClient(create_app(repair=lambda nb, emit, options: None))
+    real = [s for s in client.get("/api/samples").json() if s.get("kind") == "real"]
+    assert len(real) == 4 and all(s["source"] for s in real)

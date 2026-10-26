@@ -19,6 +19,10 @@ Rules:
 - Change only the code that is broken: code that raises an error, or whose output differs from the saved output. Leave every other character of the notebook exactly as it is.
 - Code in a later cell that will certainly raise an error with the installed versions (it uses an API that was removed or renamed, as the changelog or the printed warnings show) also counts as broken: fix it in the same patch instead of waiting for it to fail.
 - Do not "modernise" code that still works, and do not fix typos you only suspect. If code runs and prints the saved output, it is correct for this notebook. For example np.random.RandomState still works in NumPy 2; replacing it changes the random numbers and every result after it.
+- Never change how something is printed just to make it look like the saved output: do not rewrite printed text or error messages, do not override __repr__/__str__, and do not re-attach a removed method to an object (monkey-patching). Patches that do this are rejected. Revive already ignores known formatting changes (timings, figure sizes, Int64Index vs Index, object vs str dtypes, scikit-learn printing only non-default parameters). If what remains is only a difference in how a library formats its output, it is not something to fix.
+- If the notebook prints or evaluates its own code as a string (for example display('df1.append(df2)')), update that string like any other code; Revive accounts for the changed label. Do not subclass or monkey-patch library types to keep an old call working.
+- Timings (%timeit, %time) are never compared. Never pin or change library versions to change speed or formatting.
+- Treat an API as removed only when the error, a printed warning or the search results say so. Many old APIs still exist (for example np.nansum, np.nanmin, Series.isnull and Series.notnull).
 - You cannot add, delete or reorder cells.
 - If several cells use the same broken API, fix all of them in one patch.
 

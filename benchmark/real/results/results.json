@@ -1,0 +1,122 @@
+[
+  {
+    "name": "hom_04_training_linear_models",
+    "outcome": "failed",
+    "ran_after_repair": false,
+    "verified": false,
+    "drift_caught": false,
+    "attempts": 4,
+    "cells_matched": "",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 268.3,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 4,
+        "prompt_tokens": 579,
+        "completion_tokens": 839
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 4,
+        "prompt_tokens": 50403,
+        "completion_tokens": 76035
+      }
+    },
+    "explanations": [
+      "The notebook fails due to several issues: np.infty was removed in NumPy 2.0 (use np.inf), sklearn.linear_model is not a valid module (should be sklearn.linear_model), np.random.permutation is a typo for np.random.permutation, and np.unravel_index is a typo for np.unravel_index. All these changes are required to run with the given library versions."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 32: `np.infty` was removed in the NumPy 2.0 release. Use `np.inf` instead. -> applied",
+      "2: InvalidParameterError in cell 32: The 'tol' parameter of SGDRegressor must be a float in the range [0.0, inf) or None. Got -inf instead. -> invalid patch: replacement for cell 60: the text 'sgd_reg = SGDRegressor(max_iter=1, tol=-np.inf, warm_start=True, penalty=None,\\n ' does not appear anywhere in the notebook; copy 'find' exactly from the cell source",
+      "3: InvalidParameterError in cell 32: The 'tol' parameter of SGDRegressor must be a float in the range [0.0, inf) or None. Got -inf instead. -> invalid patch: replacement for cell 69: the text 'y_proba = log_reg.predict_proba(X_new)' is not in that cell and appears in several other cells (70, 72, 75); use the right cell_index and a unique snippet",
+      "4: InvalidParameterError in cell 32: The 'tol' parameter of SGDRegressor must be a float in the range [0.0, inf) or None. Got -inf instead. -> invalid patch: no JSON object found in the model response"
+    ],
+    "last_error": "InvalidParameterError in cell 32: The 'tol' parameter of SGDRegressor must be a float in the range [0.0, inf) or None. Got -inf instead."
+  },
+  {
+    "name": "hom_06_decision_trees",
+    "outcome": "already_working",
+    "ran_after_repair": true,
+    "verified": false,
+    "drift_caught": false,
+    "attempts": 0,
+    "cells_matched": "17/17",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 29.3,
+    "installed": [],
+    "usage": {},
+    "explanations": [],
+    "attempt_results": [],
+    "last_error": ""
+  },
+  {
+    "name": "pdsh_03_06_concat_and_append",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "14/14",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 22.1,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 106,
+        "completion_tokens": 236
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 3108,
+        "completion_tokens": 362
+      }
+    },
+    "explanations": [
+      "The DataFrame.append() method was removed in pandas 3.1.0. The notebook already uses pd.concat() in cells 7-15 for the same operation. Cell 16 tries to use the deprecated df1.append(df2) syntax which no longer exists. The fix replaces it with the equivalent pd.concat([df1, df2]) call."
+    ],
+    "attempt_results": [
+      "1: AttributeError in cell 16: 'DataFrame' object has no attribute 'append' -> applied"
+    ],
+    "last_error": ""
+  },
+  {
+    "name": "pdsh_03_04_missing_values",
+    "outcome": "verified",
+    "ran_after_repair": true,
+    "verified": true,
+    "drift_caught": false,
+    "attempts": 1,
+    "cells_matched": "26/26",
+    "reference": "saved",
+    "time_machine": null,
+    "reconstruction_vs_real_outputs": null,
+    "seconds": 35.8,
+    "installed": [],
+    "usage": {
+      "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B": {
+        "calls": 1,
+        "prompt_tokens": 108,
+        "completion_tokens": 197
+      },
+      "nvidia/Nemotron-3-Ultra-550b-a55b": {
+        "calls": 1,
+        "prompt_tokens": 2855,
+        "completion_tokens": 434
+      }
+    },
+    "explanations": [
+      "The `method` parameter in `fillna()` was deprecated in Pandas 2.1 and removed in Pandas 3.0. The modern API uses dedicated `ffill()` and `bfill()` methods instead. Cells 27, 28, and 30 use the removed `method` argument and need to be updated to the new methods."
+    ],
+    "attempt_results": [
+      "1: TypeError in cell 27: NDFrame.fillna() got an unexpected keyword argument 'method' -> applied"
+    ],
+    "last_error": ""
+  }
+]

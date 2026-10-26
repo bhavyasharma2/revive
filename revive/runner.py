@@ -18,7 +18,10 @@ from nbclient import NotebookClient
 from nbclient.exceptions import CellExecutionError, CellTimeoutError, DeadKernelError
 from nbformat import NotebookNode
 
-from .notebook import strip_outputs
+from .notebook import expected_errors, strip_outputs
+
+# nbclient's per-cell switch for "this cell is expected to raise".
+RAISES_TAG = "raises-exception"
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
@@ -69,16 +72,32 @@ def _clean(text: Optional[str]) -> str:
     return _ANSI_RE.sub("", text or "")
 
 
-def _find_error(nb: NotebookNode):
-    """Locate the first error output; returns (cell_index, ename, evalue, traceback) or None."""
+def _find_error(nb: NotebookNode, expected: Optional[dict[int, str]] = None):
+    """Locate the first unexpected error output; returns (cell_index, ename, evalue, traceback) or None.
+
+    A cell listed in ``expected`` that raised the same exception as in the saved
+    notebook is behaving as its author intended and is skipped.
+    """
+    expected = expected or {}
     for index, cell in enumerate(nb.cells):
         if cell.cell_type != "code":
             continue
         for output in cell.get("outputs", []):
             if output.get("output_type") == "error":
+                if index in expected and output.get("ename") == expected[index]:
+                    continue
                 trace = _clean("\n".join(output.get("traceback", [])))
                 return index, output.get("ename"), output.get("evalue"), trace
     return None
+
+
+def _startup_timeout() -> int:
+    """Seconds to wait for a kernel to start. Slow hosts (a fraction of a CPU) need more:
+    set REVIVE_KERNEL_STARTUP_TIMEOUT."""
+    try:
+        return max(10, int(os.environ.get("REVIVE_KERNEL_STARTUP_TIMEOUT", "60")))
+    except ValueError:
+        return 60
 
 
 def execute_notebook(
@@ -86,7 +105,7 @@ def execute_notebook(
     *,
     cwd: Optional[Union[str, Path]] = None,
     timeout: int = 120,
-    startup_timeout: int = 60,
+    startup_timeout: Optional[int] = None,
     kernel_name: str = "python3",
     kernel_manager_factory: Optional[Callable[[], Any]] = None,
 ) -> ExecutionResult:
@@ -102,7 +121,23 @@ def execute_notebook(
     the notebook inside an isolated environment (see ``revive.env``).
     """
     _use_selector_loop_on_windows()
+    # Cells whose saved output is an error were meant to raise: let execution continue past them.
+    expected = expected_errors(nb)
     work = strip_outputs(nb)
+    added_tags: list[int] = []
+    for index in expected:
+        tags = work.cells[index].metadata.setdefault("tags", [])
+        if RAISES_TAG not in tags:
+            tags.append(RAISES_TAG)
+            added_tags.append(index)
+
+    def untag() -> None:
+        for index in added_tags:
+            tags = work.cells[index].metadata.get("tags", [])
+            if RAISES_TAG in tags:
+                tags.remove(RAISES_TAG)
+            if not tags:
+                work.cells[index].metadata.pop("tags", None)
     state: dict[str, Optional[int]] = {"current": None}
 
     def _on_cell_execute(*, cell, cell_index, **_kwargs):
@@ -110,7 +145,7 @@ def execute_notebook(
 
     kwargs = dict(
         timeout=timeout,
-        startup_timeout=startup_timeout,
+        startup_timeout=startup_timeout if startup_timeout is not None else _startup_timeout(),
         kernel_name=kernel_name,
         allow_errors=False,
         record_timing=False,
@@ -134,6 +169,7 @@ def execute_notebook(
         launch = {} if _SHOW_KERNEL_LOGS else {"stderr": subprocess.DEVNULL}
         client.execute(cleanup_kc=True, **launch)
     except CellTimeoutError as exc:
+        untag()
         return ExecutionResult(
             ok=False,
             notebook=work,
@@ -145,6 +181,7 @@ def execute_notebook(
             timed_out=True,
         )
     except DeadKernelError as exc:
+        untag()
         return ExecutionResult(
             ok=False,
             notebook=work,
@@ -156,7 +193,8 @@ def execute_notebook(
             kernel_died=True,
         )
     except CellExecutionError as exc:
-        found = _find_error(work)
+        untag()
+        found = _find_error(work, expected)
         if found is not None:
             index, ename, evalue, trace = found
         else:  # defensive: fall back to what the exception itself carries
@@ -178,4 +216,13 @@ def execute_notebook(
     except RuntimeError as exc:
         raise RunnerError(f"could not run the notebook kernel: {exc}") from exc
 
+    untag()
+    # An intentional error cell that now raises something else (or a removed API) is a real failure.
+    found = _find_error(work, expected)
+    if found is not None:
+        index, ename, evalue, trace = found
+        return ExecutionResult(
+            ok=False, notebook=work, failed_cell=index, error_name=ename,
+            error_value=evalue, traceback=trace, duration_s=elapsed(),
+        )
     return ExecutionResult(ok=True, notebook=work, duration_s=elapsed())

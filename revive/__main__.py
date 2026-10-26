@@ -73,7 +73,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="revive", description="Repair a broken notebook and verify the fix.")
     parser.add_argument("notebook", type=Path)
     parser.add_argument("--out", type=Path, help="where to write the repaired notebook (default: <name>.revived.ipynb)")
-    parser.add_argument("--max-attempts", type=int, default=4)
+    parser.add_argument("--max-attempts", type=int, default=4, help="attempts in a row without progress before giving up")
+    parser.add_argument("--max-total-attempts", type=int, default=12, help="hard cap while attempts keep making progress")
     parser.add_argument("--timeout", type=int, default=300, help="per-cell timeout in seconds")
     parser.add_argument("--no-search", action="store_true", help="do not use Tavily web search")
     parser.add_argument("--no-env", action="store_true", help="run in the current environment (no pip installs)")
@@ -143,6 +144,7 @@ def main(argv: list[str] | None = None) -> int:
         search=search,
         env=env,
         max_attempts=args.max_attempts,
+        max_total_attempts=args.max_total_attempts,
         cell_timeout=args.timeout,
         cwd=str(args.notebook.resolve().parent),
         on_event=_printer,

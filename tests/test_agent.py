@@ -279,3 +279,56 @@ def test_max_attempts_must_be_positive():
 def test_fallback_query_mentions_library_and_error():
     q = fallback_query("AttributeError", "module 'numpy' has no attribute 'float'", ["numpy", "pandas"])
     assert q.startswith("numpy AttributeError") and "float" in q
+
+
+def _three_breaks():
+    return make_notebook(
+        "import numpy as np",
+        ("print(int(np.int(1)))", [stdout_output("1\n")]),
+        ("print(float(np.float(2)))", [stdout_output("2.0\n")]),
+        ("print(np.asscalar(np.array([5])))", [stdout_output("5\n")]),
+    )
+
+
+THREE_FIXES = [
+    patch_reply(1, "print(int(int(1)))", "np.int was removed"),
+    patch_reply(2, "print(float(float(2)))", "np.float was removed"),
+    patch_reply(3, "print(np.array([5]).item())", "np.asscalar was removed"),
+]
+
+
+def test_attempts_that_make_progress_do_not_use_up_the_budget():
+    agent = ReviveAgent(ScriptedLLM(list(THREE_FIXES)), max_attempts=1, max_total_attempts=5, cell_timeout=60)
+    result = agent.repair(_three_breaks())
+    assert result.outcome == Outcome.VERIFIED and len(result.attempts) == 3
+
+
+def test_without_an_extension_the_budget_is_a_hard_limit():
+    agent = ReviveAgent(ScriptedLLM(list(THREE_FIXES)), max_attempts=2, cell_timeout=60)
+    result = agent.repair(_three_breaks())
+    assert result.outcome == Outcome.FAILED and len(result.attempts) == 2
+
+
+def test_attempts_without_progress_still_stop_the_repair():
+    useless = [patch_reply(1, "print(int(np.int(1)))  # unchanged call", "try again")] * 3
+    agent = ReviveAgent(ScriptedLLM(useless), max_attempts=2, max_total_attempts=10, cell_timeout=60)
+    result = agent.repair(_three_breaks())
+    assert result.outcome == Outcome.FAILED and len(result.attempts) == 2
+
+
+def test_a_patch_may_not_bring_back_code_that_already_failed():
+    nb = make_notebook(
+        "import numpy as np",
+        ("print(int(np.int(7)))", [stdout_output("7\n")]),
+    )
+    replies = [
+        patch_reply(1, "print(int(np.int(7)) + 1)", "first try"),  # still raises: np.int is gone
+        patch_reply(1, "print(int(np.int(7)))", "back to the original"),  # identical to the failed original
+        patch_reply(1, "print(int(7))", "np.int was removed"),
+    ]
+    events = []
+    agent = ReviveAgent(ScriptedLLM(replies), max_attempts=4, cell_timeout=60, on_event=events.append)
+    result = agent.repair(nb)
+    assert result.outcome == Outcome.VERIFIED
+    rejected = [e for e in events if e["type"] == "patch_rejected"]
+    assert len(rejected) == 1 and "already failed" in rejected[0]["reason"] and "AttributeError" in rejected[0]["reason"]

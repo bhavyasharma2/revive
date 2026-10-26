@@ -2,7 +2,9 @@
 
 Run locally:   uvicorn revive.web.app:app --port 8000
 Settings (environment variables):
-  REVIVE_ALLOW_UPLOADS=1     accept user notebooks (they execute code; keep off on public hosts)
+  REVIVE_ALLOW_UPLOADS=1     accept user notebooks (they execute code; on a public host also
+                             run as root with REVIVE_SANDBOX_USER set, see revive/sandbox.py)
+  REVIVE_SANDBOX_USER=name   run notebook kernels as this unprivileged user
   REVIVE_LIVE=0              disable live repairs entirely (replays only)
   REVIVE_LIVE_PER_CLIENT=3   live repairs per client per day
   REVIVE_LIVE_PER_DAY=20     live repairs per day for the whole server
@@ -24,7 +26,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
+from .. import sandbox
 from ..notebook import load_notebook, loads_notebook
+from ..timemachine import validate_date
 from .jobs import CachedRun, JobManager, LimitExceeded, RateLimiter, RepairFn
 
 # The repository root (holds benchmark/). Override with REVIVE_HOME if the
@@ -33,6 +37,9 @@ ROOT = Path(os.environ.get("REVIVE_HOME") or Path(__file__).resolve().parents[2]
 STATIC = Path(__file__).resolve().parent / "static"
 SAMPLES = ROOT / "benchmark" / "notebooks"
 MANIFEST = ROOT / "benchmark" / "manifest.json"
+# Sample sets shown in the app: (folder with manifest.json and notebooks/). The real
+# public notebooks (benchmark/real/) come after the benchmark's own.
+SAMPLE_SETS = (ROOT / "benchmark", ROOT / "benchmark" / "real")
 MAX_UPLOAD_BYTES = 2_000_000
 SSE_POLL_S = 0.2
 SSE_KEEPALIVE_S = 15.0
@@ -64,14 +71,17 @@ def default_repair() -> RepairFn:
         except TavilyError:
             search = None
         with tempfile.TemporaryDirectory(prefix="revive-web-") as tmp:
+            # The notebook may write files in work/; the environment in venv/ stays out of its reach.
+            work = sandbox.make_workdir(Path(tmp) / "work")
             env = NotebookEnv.create(Path(tmp) / "venv")
             agent = ReviveAgent(
                 llm,
                 search=search,
                 env=env,
                 max_attempts=4,
+                max_total_attempts=10,
                 cell_timeout=180,
-                cwd=tmp,
+                cwd=str(work),
                 on_event=emit,
                 time_machine=options.get("time_machine", "auto"),
                 as_of=options.get("as_of"),
@@ -86,6 +96,20 @@ def load_manifest() -> list[dict]:
     if not MANIFEST.exists():
         return []
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+
+def load_samples() -> dict[str, tuple[dict, Path]]:
+    """Every bundled notebook that exists on disk: name -> (manifest entry, path)."""
+    found: dict[str, tuple[dict, Path]] = {}
+    for folder in SAMPLE_SETS:
+        manifest = folder / "manifest.json"
+        if not manifest.exists():
+            continue
+        for entry in json.loads(manifest.read_text(encoding="utf-8")):
+            path = folder / "notebooks" / f"{entry['name']}.ipynb"
+            if path.exists() and entry["name"] not in found:
+                found[entry["name"]] = (entry, path)
+    return found
 
 
 def load_recordings(manager: JobManager, folder: Path) -> int:
@@ -119,17 +143,28 @@ class JobRequest(BaseModel):
     notebook: Optional[str] = None
     live: bool = False
     time_machine: bool = False  # force the Time Machine even when outputs are saved
+    as_of: Optional[str] = None  # uploads: when the notebook was last changed (YYYY-MM-DD), for the Time Machine
 
 
 def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] = None) -> FastAPI:
     allow_uploads = _flag("REVIVE_ALLOW_UPLOADS", False)
+    if allow_uploads and sandbox.requested() and not sandbox.active():
+        # The operator asked for sandboxed kernels but this process cannot provide them
+        # (not root, or the user does not exist): uploaded code would see the API keys.
+        print("revive: REVIVE_SANDBOX_USER is set but kernels cannot be sandboxed here; uploads are disabled")
+        allow_uploads = False
     live_enabled = _flag("REVIVE_LIVE", True)
+    if repair is None and live_enabled and not os.environ.get("NEBIUS_API_KEY", "").strip():
+        # Without a key every live repair would fail; offer replays only instead of an error.
+        print("revive: NEBIUS_API_KEY is not set, so live repairs and uploads are off (replays still work)")
+        live_enabled = False
     limiter = RateLimiter(per_client=_int("REVIVE_LIVE_PER_CLIENT", 3), per_day=_int("REVIVE_LIVE_PER_DAY", 20))
     manager = JobManager(repair or default_repair(), max_concurrent=_int("REVIVE_MAX_CONCURRENT", 2), limiter=limiter)
     folder = recordings or Path(os.environ.get("REVIVE_RECORDINGS", ROOT / "benchmark" / "recordings"))
     load_recordings(manager, folder)
 
-    samples = {entry["name"]: entry for entry in load_manifest() if (SAMPLES / f"{entry['name']}.ipynb").exists()}
+    sample_files = load_samples()
+    samples = {name: entry for name, (entry, _path) in sample_files.items()}
 
     app = FastAPI(title="Revive", docs_url=None, redoc_url=None)
     app.state.manager = manager
@@ -144,7 +179,12 @@ def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] 
 
     @app.get("/api/config")
     def config() -> dict:
-        return {"allow_uploads": allow_uploads, "live_enabled": live_enabled}
+        return {
+            "allow_uploads": allow_uploads and live_enabled,
+            "live_enabled": live_enabled,
+            "max_upload_bytes": MAX_UPLOAD_BYTES,
+            "sandboxed": sandbox.active(),
+        }
 
     @app.get("/api/samples")
     def list_samples() -> list[dict]:
@@ -166,7 +206,7 @@ def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] 
         if body.sample:
             if body.sample not in samples:
                 raise HTTPException(404, f"unknown sample: {body.sample}")
-            nb = load_notebook(SAMPLES / f"{body.sample}.ipynb")
+            nb = load_notebook(sample_files[body.sample][1])
             label, key = samples[body.sample]["title"], f"sample:{body.sample}" + (":tm" if body.time_machine else "")
         else:
             if not allow_uploads:
@@ -178,6 +218,10 @@ def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] 
             except Exception as exc:  # noqa: BLE001 - nbformat raises several types
                 raise HTTPException(400, f"this file is not a valid .ipynb notebook: {exc}") from exc
             label, key = "Uploaded notebook", None
+            try:
+                upload_as_of = validate_date(body.as_of)
+            except ValueError as exc:
+                raise HTTPException(400, f"last changed date: {exc}") from exc
 
         live = body.live or key is None or key not in manager.cache
         if live and not live_enabled:
@@ -187,6 +231,8 @@ def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] 
             if body.sample:
                 # Bundled samples carry the date their version control would give (see benchmark/manifest.json).
                 options["as_of"] = samples[body.sample].get("as_of")
+            else:
+                options["as_of"] = upload_as_of
             job = manager.start(nb, label=label, client=client_id(request), cache_key=key, live=live, options=options)
         except LimitExceeded as exc:
             raise HTTPException(429, str(exc)) from exc

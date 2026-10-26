@@ -338,3 +338,52 @@ def patch_diff(nb: NotebookNode, patch: Patch) -> str:
             if 0 <= edit.cell_index < len(after.cells) and after.cells[edit.cell_index].cell_type == "code":
                 after.cells[edit.cell_index].source = edit.new_source
     return notebook_diff(nb, after, patch.pip_install)
+
+
+# ---------- patches that fake the check instead of fixing the code ----------
+
+_PRINT_HOOKS = ("__repr__", "__str__", "_repr_html_", "_repr_pretty_", "__format__")
+_MONKEY_PATCH_RE = re.compile(r"^\s*[A-Za-z_][\w.]*\.[A-Za-z_]\w*\s*=\s*(?:lambda\b|types\.MethodType\b|functools\.partial\b)", re.M)
+# A new subclass of a pandas/NumPy/scikit-learn type, typically to bring back a removed method.
+_LIBRARY_SUBCLASS_RE = re.compile(r"^\s*class\s+\w+\s*\(\s*(?:pd|pandas|np|numpy|sklearn)\.[\w.]+\s*[,)]", re.M)
+_STRING_RE = re.compile(r"""(?:[rRbBuUfF]{0,2})(?:'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)")""")
+MIN_PASTED_CHARS = 4
+
+
+def gaming_reasons(original: NotebookNode, before: NotebookNode, after: NotebookNode, reference: NotebookNode) -> list[str]:
+    """Why a patch looks like it fakes the output check rather than fixing the code.
+
+    Three signs, each checked only in lines the patch added:
+    - a string literal copied from the expected output that the original notebook never contained
+      (for example printing "Int64Index(" because old pandas did);
+    - a new __repr__/__str__-style hook, which changes how results print, not what they are;
+    - re-attaching a method to an object (``df.append = lambda ...``), which hides a removed API.
+    """
+    from .compare import comparable_text  # local import: compare does not depend on patches
+
+    original_source = "\n".join(c.source for c in original.cells if c.cell_type == "code")
+    expected = "\n".join(comparable_text(c.get("outputs", [])) for c in reference.cells if c.cell_type == "code")
+    reasons: list[str] = []
+    for index in changed_cells(before, after):
+        old = before.cells[index].source
+        old_lines = {line.strip() for line in old.splitlines()}
+        added = "\n".join(line for line in after.cells[index].source.splitlines() if line.strip() not in old_lines)
+        if not added:
+            continue
+        for hook in _PRINT_HOOKS:
+            if hook in added and hook not in old:
+                reasons.append(f"cell {index} adds {hook}, which changes how results are printed instead of fixing them")
+                break
+        if _LIBRARY_SUBCLASS_RE.search(added) and not _LIBRARY_SUBCLASS_RE.search(old):
+            reasons.append(f"cell {index} subclasses a library type to bring back old behaviour; change the call itself")
+        if _MONKEY_PATCH_RE.search(added):
+            reasons.append(f"cell {index} re-attaches a method to an object (monkey-patching); change the call itself")
+        for match in _STRING_RE.finditer(added):
+            value = (match.group(1) if match.group(1) is not None else match.group(2) or "").strip()
+            if len(value) >= MIN_PASTED_CHARS and value in expected and value not in original_source:
+                reasons.append(
+                    f"cell {index} pastes text from the expected output ({value[:60]!r}) into the code, "
+                    "so it would print the saved output instead of computing it"
+                )
+                break
+    return reasons

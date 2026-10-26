@@ -2,6 +2,7 @@
 
 Run:  python scripts/run_benchmark.py            (all notebooks)
       python scripts/run_benchmark.py --only pandas_append sklearn_ovr_trap
+      python scripts/run_benchmark.py --set real     (real public notebooks, benchmark/real/)
 
 Needs NEBIUS_API_KEY (and TAVILY_API_KEY for web search). Writes
 benchmark/results/results.json, benchmark/results/RESULTS.md and the repaired
@@ -30,8 +31,15 @@ from revive.search import TavilyClient, TavilyError  # noqa: E402
 from revive.web.jobs import notebook_event  # noqa: E402
 
 BENCH = ROOT / "benchmark"
-RESULTS = BENCH / "results"
 RECORDINGS = BENCH / "recordings"
+SETS = {
+    # name: (folder with manifest.json and notebooks/, results folder, record failed runs too)
+    "benchmark": (BENCH, BENCH / "results", False),
+    "real": (BENCH / "real", BENCH / "real" / "results", True),
+}
+RESULTS = BENCH / "results"
+RECORD_ALL = False
+MAX_ATTEMPTS = 4
 
 
 def reconstruction_vs_real(result, entry: Optional[dict]) -> Optional[str]:
@@ -53,13 +61,16 @@ def run_one(path: Path, llm: TokenFactoryClient, search, args, entry: Optional[d
     started = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="revive-bench-") as tmp:
         env = None if args.no_env else NotebookEnv.create(Path(tmp) / "venv")
+        work = Path(tmp) / "work"  # files the notebook writes (figures, CSVs) go here, not into the repo
+        work.mkdir()
         agent = ReviveAgent(
             llm,
             search=search,
             env=env,
             max_attempts=args.max_attempts,
+            max_total_attempts=getattr(args, "max_total_attempts", None),
             cell_timeout=args.timeout,
-            cwd=str(path.parent),
+            cwd=str(work),
             on_event=events.append,
             as_of=(entry or {}).get("as_of"),
         )
@@ -73,7 +84,7 @@ def run_one(path: Path, llm: TokenFactoryClient, search, args, entry: Optional[d
         (RESULTS / "revived").mkdir(parents=True, exist_ok=True)
         save_notebook(result.notebook, RESULTS / "revived" / path.name)
 
-    if result.outcome == Outcome.VERIFIED:
+    if result.outcome == Outcome.VERIFIED or RECORD_ALL:
         # A recording of this live run, replayed by the web app without spending credits.
         RECORDINGS.mkdir(parents=True, exist_ok=True)
         recording = {
@@ -116,9 +127,11 @@ def write_markdown(rows: list[dict], manifest: dict[str, dict]) -> str:
     no_out = [r for r in rows if manifest.get(r["name"], {}).get("kind") == "no_outputs"]
     no_out_verified = sum(1 for r in no_out if r.get("verified"))
     lines = [
-        "# Revive benchmark results",
+        "# Revive benchmark results" if not RECORD_ALL else "# Revive on real public notebooks",
         "",
-        f"- Notebooks: **{total}**, all broken against current NumPy/pandas/scikit-learn. Saved outputs are authentic: produced by the old code on old libraries.",
+        f"- Notebooks: **{total}**, all broken against current NumPy/pandas/scikit-learn. Saved outputs are authentic: produced by the old code on old libraries."
+        if not RECORD_ALL else
+        f"- Notebooks: **{total}**, written by other people (see benchmark/real/README.md). Saved outputs are the authors' own.",
         f"- Verified repairs: **{verified}/{total}**",
     ]
     if no_out:
@@ -129,6 +142,7 @@ def write_markdown(rows: list[dict], manifest: dict[str, dict]) -> str:
         f"- Ran at some point during repair: {ran}/{total}",
         f"- Times a fix ran but the output check caught different numbers: {caught}",
         f"- Total tokens: {tokens:,}",
+        f"- Attempts allowed per notebook: {MAX_ATTEMPTS}",
         "",
         "| Notebook | What broke | Checked against | Outcome | Attempts | Cells matched | Time (s) |",
         "|---|---|---|---|---|---|---|",
@@ -146,13 +160,18 @@ def write_markdown(rows: list[dict], manifest: dict[str, dict]) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", nargs="*", help="notebook names to run (default: all)")
-    parser.add_argument("--max-attempts", type=int, default=4)
+    parser.add_argument("--max-attempts", type=int, default=4, help="attempts in a row without progress before giving up")
+    parser.add_argument("--max-total-attempts", type=int, default=12, help="hard cap while attempts keep making progress")
     parser.add_argument("--timeout", type=int, default=300)
     parser.add_argument("--no-search", action="store_true")
     parser.add_argument("--no-env", action="store_true")
+    parser.add_argument("--set", choices=sorted(SETS), default="benchmark", help="which notebooks: the benchmark (default) or real public notebooks")
     args = parser.parse_args()
 
-    manifest = {m["name"]: m for m in json.loads((BENCH / "manifest.json").read_text(encoding="utf-8"))}
+    global RESULTS, RECORD_ALL, MAX_ATTEMPTS
+    folder, RESULTS, RECORD_ALL = SETS[args.set]
+    MAX_ATTEMPTS = f"up to {args.max_total_attempts}, stopping after {args.max_attempts} in a row without progress"
+    manifest = {m["name"]: m for m in json.loads((folder / "manifest.json").read_text(encoding="utf-8"))}
     names = args.only or list(manifest)
     unknown = [n for n in names if n not in manifest]
     if unknown:
@@ -170,8 +189,8 @@ def main() -> int:
     RESULTS.mkdir(parents=True, exist_ok=True)
     rows = []
     for name in names:
-        print(f"{name:<26} ...", end="", flush=True)
-        row = run_one(BENCH / "notebooks" / f"{name}.ipynb", llm, search, args, manifest[name])
+        print(f"{name:<32} ...", end="", flush=True)
+        row = run_one(folder / "notebooks" / f"{name}.ipynb", llm, search, args, manifest[name])
         rows.append(row)
         print(f" {row['outcome']:<16} attempts={row.get('attempts', '-')}  {row['seconds']}s")
 

@@ -31,6 +31,7 @@ from .imports import notebook_distributions
 from .notebook import has_stored_outputs
 from .patches import PatchParseError, extract_json_object, validate_pip_spec
 from .runner import ExecutionResult, RunnerError, execute_notebook
+from .sandbox import kernel_argv, make_traversable
 
 SUPPORTED_PYTHONS = ("3.8", "3.9", "3.10", "3.11", "3.12")
 KERNEL_NAME = "revive-legacy"
@@ -277,7 +278,7 @@ class LegacyEnv:
         spec_dir = self.kernel_dir / KERNEL_NAME
         spec_dir.mkdir(parents=True, exist_ok=True)
         kernel = {
-            "argv": [str(self.python), "-m", "ipykernel_launcher", "-f", "{connection_file}"],
+            "argv": kernel_argv(self.python),
             "display_name": f"Revive Time Machine ({self.spec.describe()})",
             "language": "python",
         }
@@ -287,6 +288,7 @@ class LegacyEnv:
         from jupyter_client.kernelspec import KernelSpecManager
         from jupyter_client.manager import AsyncKernelManager
 
+        make_traversable(self.root)  # a sandboxed kernel must be able to reach this python
         ksm = KernelSpecManager(kernel_dirs=[str(self.kernel_dir)])
         return AsyncKernelManager(kernel_name=KERNEL_NAME, kernel_spec_manager=ksm)
 

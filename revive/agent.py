@@ -18,6 +18,7 @@ its outputs become the reference the repaired notebook must reproduce.
 from __future__ import annotations
 
 import re
+import itertools
 import tempfile
 import time
 from dataclasses import asdict, dataclass, field
@@ -38,6 +39,7 @@ from .patches import (
     PatchApplyError,
     PatchParseError,
     apply_patch,
+    gaming_reasons,
     changed_cells,
     notebook_diff,
     parse_patch,
@@ -185,6 +187,7 @@ class ReviveAgent:
         reconstructor: Optional[Callable[..., Reconstruction]] = None,
         retry_delays: Sequence[float] = (5.0, 15.0),
         as_of: Optional[str] = None,
+        max_total_attempts: Optional[int] = None,
     ) -> None:
         self.retry_delays = tuple(retry_delays)
         self.as_of = as_of  # when the notebook was last changed, if known (e.g. its last git commit)
@@ -197,7 +200,11 @@ class ReviveAgent:
         self.llm = llm
         self.search = search
         self.env = env
+        # max_attempts counts attempts that make no progress. Long notebooks often break in
+        # several separate places; while each fix gets further (a later failing cell, or more
+        # cells matching), Revive keeps going, up to max_total_attempts (default: no extension).
         self.max_attempts = max_attempts
+        self.max_total_attempts = max(max_attempts, max_total_attempts or max_attempts)
         self.cell_timeout = cell_timeout
         self.cwd = cwd
         self.fix_drift = fix_drift
@@ -325,7 +332,13 @@ class ReviveAgent:
 
         run: Optional[ExecutionResult] = None
         ran: Optional[NotebookNode] = None  # the notebook version `run` belongs to
-        for round_number in range(self.max_attempts + 1):
+        best: Optional[tuple[int, int]] = None  # how far the best run so far got
+        # Versions of a cell that already failed (crashed, or printed different results), so a
+        # later patch cannot quietly bring them back: models sometimes go in circles between two
+        # fixes that each fail in a different way.
+        failed_versions: dict[tuple[int, str], str] = {}
+        stalled = 0  # attempts since the last one that made progress
+        for round_number in itertools.count():
             # A rejected patch leaves the notebook unchanged: reuse that run instead of repeating it.
             fresh = run is None or ran is not current
             if fresh:
@@ -340,9 +353,35 @@ class ReviveAgent:
                     duration_s=run.duration_s,
                 )
 
-            drift_text: Optional[str] = None
             if run.ok:
                 report = compare_notebooks(oracle, run.notebook, rtol=self.rtol)
+                score = (1, report.count(Status.MATCH))
+            else:
+                report = None
+                score = (0, run.failed_cell if run.failed_cell is not None else -1)
+            if fresh:
+                when = "before any fix" if not attempts else f"after attempt {len(attempts)}"
+                if not run.ok and run.failed_cell is not None and run.failed_cell < len(ran.cells):
+                    failed_versions.setdefault(
+                        (run.failed_cell, ran.cells[run.failed_cell].source),
+                        f"it raised {run.error_name}: {(run.error_value or '').splitlines()[0][:160] if run.error_value else ''} ({when})",
+                    )
+                elif report is not None:
+                    for failure in report.failures:
+                        failed_versions.setdefault(
+                            (failure.cell_index, ran.cells[failure.cell_index].source),
+                            f"it printed different results: {failure.detail[:160]} ({when})",
+                        )
+            if round_number > 0:
+                if fresh and best is not None and score > best:
+                    stalled = 0
+                else:
+                    stalled += 1
+            best = score if best is None else max(best, score)
+            exhausted = stalled >= self.max_attempts or len(attempts) >= self.max_total_attempts
+
+            drift_text: Optional[str] = None
+            if run.ok:
                 if fresh:
                     self._emit("compare", reference=self._reference, **report.to_dict())
                 locked |= {c.cell_index for c in report.cells if c.status == Status.MATCH}
@@ -351,7 +390,7 @@ class ReviveAgent:
                 if report.verified:
                     outcome = Outcome.VERIFIED if changed else Outcome.ALREADY_WORKING
                     return self._finish(outcome, run.notebook, attempts, report)
-                if not self.fix_drift or round_number == self.max_attempts:
+                if not self.fix_drift or exhausted:
                     return self._finish(Outcome.DRIFT, run.notebook, attempts, report)
                 drift_text = _drift_summary(report, label=label)
                 error_text = "outputs differ from the saved outputs" if self._reference == REFERENCE_SAVED else (
@@ -368,7 +407,7 @@ class ReviveAgent:
             else:
                 locked |= matching_cells(oracle, run.notebook, upto=run.failed_cell, rtol=self.rtol)
                 error_text = run.error_summary()
-                if round_number == self.max_attempts:
+                if exhausted:
                     return self._finish(Outcome.FAILED, current, attempts, None, last_error=error_text)
                 focus_cell = run.failed_cell
                 search_name, search_value, search_text = run.error_name, run.error_value, error_text
@@ -402,6 +441,23 @@ class ReviveAgent:
                 broken = syntax_errors(current, patched)
                 if broken:
                     raise PatchApplyError("the edited code is not valid Python: " + "; ".join(broken))
+                repeated = [
+                    f"cell {i} would go back to code that already failed: {failed_versions[(i, patched.cells[i].source)]}"
+                    for i in changed_cells(current, patched)
+                    if (i, patched.cells[i].source) in failed_versions
+                ]
+                if repeated:
+                    raise PatchApplyError(
+                        "; ".join(repeated) + ". Both earlier versions failed, so find a different approach "
+                        "(for example a replacement class or function the library now provides)"
+                    )
+                faked = gaming_reasons(original, current, patched, oracle)
+                if faked:
+                    raise PatchApplyError(
+                        "; ".join(faked)
+                        + ". Fix what the code computes; if the only difference left is how a library formats "
+                        "its output, leave it"
+                    )
                 touched_locked = sorted(set(changed_cells(current, patched)) & locked)
                 if touched_locked:
                     cells = ", ".join(str(i) for i in touched_locked)

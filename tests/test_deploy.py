@@ -43,4 +43,6 @@ def test_missing_token_is_an_error(monkeypatch, capsys):
 def test_dockerfile_matches_space_requirements():
     dockerfile = (ROOT / "Dockerfile").read_text()
     assert "--uid 1000" in dockerfile and "PORT=7860" in dockerfile
+    # Uploaded notebooks must run as the unprivileged sandbox user on the hosted demo.
+    assert "REVIVE_SANDBOX_USER=sandbox" in dockerfile and "useradd" in dockerfile and "USER " not in dockerfile
     assert "requirements-demo.txt" in dockerfile

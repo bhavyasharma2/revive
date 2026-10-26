@@ -1,0 +1,38 @@
+[
+  {
+    "name": "hom_04_training_linear_models",
+    "title": "Training linear models (handson-ml, chapter 4)",
+    "breaks": "np.infty (NumPy 2.0), negative SGD tol (scikit-learn), astype(np.int) (NumPy 1.24), LogisticRegression(multi_class=...) (scikit-learn 1.8)",
+    "kind": "real",
+    "source": "https://github.com/ageron/handson-ml/blob/master/04_training_linear_models.ipynb",
+    "author": "Aurélien Géron",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "hom_06_decision_trees",
+    "title": "Decision trees (handson-ml, chapter 6)",
+    "breaks": "expected scipy.stats.mode (SciPy 1.11) to break it; it still works: only scikit-learn's printout of the models changed",
+    "kind": "real",
+    "source": "https://github.com/ageron/handson-ml/blob/master/06_decision_trees.ipynb",
+    "author": "Aurélien Géron",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "pdsh_03_06_concat_and_append",
+    "title": "Concat and append (Python Data Science Handbook 3.06, code cells)",
+    "breaks": "DataFrame.append (removed in pandas 2.0), called through a string the notebook evaluates",
+    "kind": "real",
+    "source": "https://github.com/jakevdp/PythonDataScienceHandbook/blob/master/notebooks/03.06-Concat-And-Append.ipynb",
+    "author": "Jake VanderPlas",
+    "license": "MIT (code cells only)"
+  },
+  {
+    "name": "pdsh_03_04_missing_values",
+    "title": "Handling missing data (Python Data Science Handbook 3.04, code cells)",
+    "breaks": "fillna(method=...) (removed in pandas 3.0)",
+    "kind": "real",
+    "source": "https://github.com/jakevdp/PythonDataScienceHandbook/blob/master/notebooks/03.04-Missing-Values.ipynb",
+    "author": "Jake VanderPlas",
+    "license": "MIT (code cells only)"
+  }
+]

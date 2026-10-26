@@ -19,3 +19,7 @@ jobs:
           pip install -r requirements-demo.txt
       - name: Run tests (no API keys needed)
         run: pytest
+      - name: Sandbox test as root (uploaded notebooks must not see the server's secrets)
+        run: |
+          sudo useradd --create-home --shell /usr/sbin/nologin revivesbx
+          sudo env "PATH=$PATH" python -m pytest tests/test_sandbox.py -v

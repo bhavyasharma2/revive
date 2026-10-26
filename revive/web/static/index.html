@@ -147,8 +147,34 @@ h1 em { font-style: normal; color: var(--ok); }
 .tm-toggle b { color: var(--time); font-weight: 600; }
 .sample-note { grid-column: 1 / -1; margin: 0 2px; font-size: 13px; color: var(--muted); }
 .sample-note .mono { color: var(--ink); font-size: 12px; }
-.upload label { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-.upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.sample-note a { color: var(--agent); }
+.own { margin-top: 40px; }
+.own-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 12px; }
+.drop { position: relative; display: grid; place-content: center; gap: 4px; text-align: center; min-height: 180px; padding: 20px; border: 1.5px dashed var(--line-strong); border-radius: var(--radius); background: var(--panel); cursor: pointer; transition: border-color .15s ease, background-color .15s ease; }
+.drop:hover, .drop.over { border-color: var(--ink); }
+.drop.ready { border-style: solid; border-color: var(--ok); }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.drop strong { font-size: 16px; }
+.drop span { font-size: 13px; color: var(--muted); }
+.drop .fname { font: 13px/1.4 var(--mono); color: var(--ok); overflow-wrap: anywhere; }
+.drop .ferr { color: var(--bad); }
+.drop:focus-within { outline: 2px solid var(--agent); outline-offset: 2px; }
+.scope { display: grid; grid-template-columns: 1fr 1fr; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.scope > div { padding: 16px 18px; }
+.scope > div + div { border-left: 1px solid var(--line); }
+.scope h4 { margin: 0 0 8px; font: 500 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.scope .yes h4 { color: var(--ok); }
+.scope .next h4 { color: var(--muted); }
+.scope ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 14px; }
+.scope li { padding-left: 18px; position: relative; }
+.scope .yes li::before { content: "✓"; position: absolute; left: 0; color: var(--ok); font-weight: 700; }
+.scope .next li { color: var(--muted); }
+.scope .next li::before { content: "○"; position: absolute; left: 0; color: var(--faint); font-size: 12px; }
+.own-row { display: flex; gap: 10px 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 12px; }
+.date { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.date input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.date .opt { color: var(--muted); font-size: 13px; }
+.privacy { margin: 10px 2px 0; font-size: 13px; color: var(--muted); }
 
 /* ---------- results ---------- */
 .results { padding-top: 28px; scroll-margin-top: 12px; }
@@ -227,6 +253,14 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
 .diff .add { background: var(--ok-soft); color: var(--ok); }
 .diff .del { background: var(--bad-soft); color: var(--bad); }
 .diff .hunk { color: var(--faint); }
+.status { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--code-bg); }
+.status[hidden] { display: none; }
+.status .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line-strong); border-top-color: var(--ok); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.status b { display: block; font-size: 14px; font-weight: 650; }
+.status span.sub2 { display: block; font-size: 13px; color: var(--muted); }
+.status .t { font: 12px/1 var(--mono); color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .status .spin { animation: none !important; border-top-color: var(--line-strong); border-color: var(--ok); } }
 .thinking::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: dots 1.2s steps(4) infinite; }
 @keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
 
@@ -242,6 +276,10 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
 }
 @media (max-width: 720px) {
   .wrap { padding: 0 16px; }
+  .own-grid, .scope { grid-template-columns: 1fr; }
+  .scope > div + div { border-left: 0; border-top: 1px solid var(--line); }
+  .drop { min-height: 140px; }
+  .own-row .btn { width: 100%; }
   .steps { grid-template-columns: 1fr; }
   .step, .step + .step { padding: 16px 0; border-left: 0; }
   .step + .step { border-top: 1px solid var(--line); }
@@ -292,6 +330,7 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
       <p class="sub">NumPy, pandas and scikit-learn keep removing things. Revive rewrites the broken code with NVIDIA Nemotron, re-runs every cell, and checks each result against the original.</p>
       <div class="hero-cta">
         <a class="btn" href="#try">Try a broken notebook</a>
+        <a class="btn secondary" href="#own" id="ownCta" hidden>Repair your own</a>
         <span class="proof"><b>20/20</b> benchmark notebooks verified</span>
       </div>
     </div>
@@ -335,9 +374,47 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
       <p class="sample-note" id="sampleNote"></p>
       <div class="opts">
         <label class="tm-toggle"><input type="checkbox" id="tm"><span><b>Time Machine</b> also check against the rebuilt original environment</span></label>
-        <span class="upload" id="uploadBox" hidden>or <label for="file">repair your own .ipynb</label><input type="file" id="file" accept=".ipynb,application/json"></span>
       </div>
     </div>
+  </section>
+
+  <section class="own" id="own" hidden aria-labelledby="ownTitle">
+    <div class="section-head">
+      <h2 id="ownTitle">Or repair your own notebook</h2>
+      <p>Runs live with Nemotron · takes a few minutes · 3 per visitor per day</p>
+    </div>
+    <div class="own-grid">
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept=".ipynb,application/json" aria-describedby="dropHint">
+        <strong>Drop a .ipynb file here</strong>
+        <span id="dropHint">or click to choose one · up to 2 MB</span>
+        <span class="fname" id="fname"></span>
+      </label>
+      <div class="scope">
+        <div class="yes">
+          <h4>Works today</h4>
+          <ul>
+            <li>NumPy, pandas, SciPy and scikit-learn</li>
+            <li>Self-contained: data is generated or built in (no files of your own)</li>
+            <li>Runs on a CPU in a few minutes</li>
+            <li>With saved outputs, or without: the Time Machine rebuilds the original</li>
+          </ul>
+        </div>
+        <div class="next">
+          <h4>Coming next</h4>
+          <ul>
+            <li>Checking plots, not only printed output</li>
+            <li>PyTorch, TensorFlow and GPU notebooks</li>
+            <li>Notebooks that read your data files</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="own-row">
+      <label class="date">Last changed <span class="opt">(optional, helps the Time Machine)</span><input type="date" id="asOf" min="2012-01-01"></label>
+      <button class="btn" id="uploadRun" disabled>Repair my notebook</button>
+    </div>
+    <p class="privacy">Your notebook runs in an isolated sandbox on this server and is deleted afterwards. Don’t upload anything confidential.</p>
   </section>
 
   <section class="results" id="results" aria-label="Repair">
@@ -358,6 +435,11 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
       </section>
       <section class="panel" aria-labelledby="logTitle">
         <header><h3 id="logTitle">What Revive did</h3><span id="logMeta"></span></header>
+        <div class="status" id="status" role="status" aria-live="polite" hidden>
+          <span class="spin" aria-hidden="true"></span>
+          <div><b id="statusText">Starting</b><span class="sub2" id="statusSub"></span></div>
+          <span class="t" id="statusTime" aria-label="Time elapsed">0:00</span>
+        </div>
         <ol class="log" id="log" aria-live="polite"></ol>
         <p class="empty" id="logEmpty">Each step shows up here: the error, the web search, Nemotron’s fix, and the check.</p>
       </section>
@@ -395,11 +477,13 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
     const recorded = $("tm").checked ? s.recorded_tm_at : s.recorded_at;
     const replay = recorded ? "Replays a recorded run." : (state.config.live_enabled ? "No recording yet: this calls Nemotron live." : "No recording yet.");
     const dated = s.as_of ? ` Last changed ${esc(s.as_of)}.` : "";
-    $("sampleNote").innerHTML = `What broke: <span class="mono">${esc(s.breaks)}</span>.${dated} ${replay}`;
+    const credit = s.source ? ` By ${esc(s.author || "its author")} (${esc(s.license || "")}), <a href="${esc(s.source)}" target="_blank" rel="noopener">source ↗</a>.` : "";
+    const label = s.kind === "real" ? "Expected to break" : "What broke";
+    $("sampleNote").innerHTML = `${label}: <span class="mono">${esc(s.breaks)}</span>.${dated}${credit} ${replay}`;
     $("live").hidden = !recorded || !state.config.live_enabled;
   }
 
-  const GROUPS = [["error", "Crashes on today’s libraries"], ["silent", "Runs, but prints different numbers"], ["no_outputs", "Saved without outputs (Time Machine)"]];
+  const GROUPS = [["error", "Crashes on today’s libraries"], ["silent", "Runs, but prints different numbers"], ["no_outputs", "Saved without outputs (Time Machine)"], ["real", "Real notebooks by other authors"]];
 
   async function init() {
     try {
@@ -418,7 +502,10 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
     document.querySelectorAll(".pick").forEach((b) => { if (!names.has(b.dataset.sample)) b.hidden = true; });
     if (names.has("legacy_churn_model")) $("sample").value = "legacy_churn_model";
     sampleNote();
-    $("uploadBox").hidden = !state.config.allow_uploads;
+    const uploads = Boolean(state.config.allow_uploads);
+    $("own").hidden = !uploads; $("ownCta").hidden = !uploads;
+    if (state.config.max_upload_bytes) state.maxUpload = state.config.max_upload_bytes;
+    $("asOf").max = new Date().toISOString().slice(0, 10);
   }
 
   function resetView() {
@@ -433,7 +520,8 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
     state.busy = busy;
     ["run", "live", "sample", "tm"].forEach((id) => { $(id).disabled = busy; });
     document.querySelectorAll(".pick").forEach((b) => { b.disabled = busy; });
-    const file = $("file"); if (file) file.disabled = busy;
+    $("file").disabled = busy;
+    $("uploadRun").disabled = busy || !state.upload;
   }
 
   function markPick(name) {
@@ -444,19 +532,41 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
     const logo = $("logo"); logo.classList.remove("beat"); void logo.offsetWidth; logo.classList.add("beat");
   }
 
+  // ---------- status bar: what Revive is doing right now ----------
+  function setStatus(text, sub = "") {
+    $("statusText").textContent = text; $("statusSub").textContent = sub;
+  }
+  function showStatus(live) {
+    clearInterval(state.timer);
+    state.live = live;
+    state.started = Date.now();
+    $("statusTime").textContent = "0:00";
+    $("status").hidden = false;
+    setStatus(live ? "Starting a live repair" : "Loading a recorded run",
+      live ? "Setting up an isolated Python environment. Live repairs usually take 1 to 5 minutes." : "");
+    state.timer = setInterval(() => {
+      const s = Math.floor((Date.now() - state.started) / 1000);
+      $("statusTime").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    }, 1000);
+  }
+  function hideStatus() { clearInterval(state.timer); $("status").hidden = true; }
+
   async function start(body) {
     if (state.busy) return;
     resetView(); setBusy(true);
     markPick(body.sample || "");
     state.scrolled = false;
+    showStatus(Boolean(body.live));
     let job;
     try {
       job = await api("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     } catch (e) {
+      hideStatus();
       showVerdict("bad", "!", "Could not start the repair", e.message);
       setBusy(false); return;
     }
     state.jobId = job.id;
+    if (job.live) showStatus(true);
     if (!job.live && job.recorded_at) {
       const live = state.config.live_enabled ? " Press Run live to call Nemotron now instead." : "";
       $("replayNote").textContent = `Replay of a real run recorded on ${fmtDate(job.recorded_at)}.${live}`;
@@ -466,12 +576,15 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
     state.source = source;
     source.onmessage = (m) => handle(JSON.parse(m.data));
     source.addEventListener("end", (m) => {
-      source.close(); setBusy(false);
+      source.close(); setBusy(false); hideStatus();
       const summary = JSON.parse(m.data);
       if (!summary.has_notebook) { const dl = $("dl"); if (dl) dl.remove(); }
       if (summary.error) { const rep = $("rep"); if (rep) rep.remove(); }
     });
-    source.onerror = () => { source.close(); setBusy(false); };
+    source.onerror = () => {
+      source.close(); setBusy(false); hideStatus();
+      if (!$("verdict").classList.contains("show")) showVerdict("bad", "!", "Lost the connection to the server", "The repair may still be running. Refresh the page to start again.");
+    };
   }
 
   // ---------- notebook ----------
@@ -564,7 +677,34 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
     already_working: "This notebook already matches its original environment",
   };
 
+  const PHASE = {
+    notebook: ["Setting up an isolated Python environment", "Live repairs usually take 1 to 5 minutes."],
+    search: ["Nemotron is writing a fix", "Reading the error, the library versions and what Tavily found."],
+    thinking: ["Nemotron is writing a fix", "Reading the error, the library versions and what Tavily found."],
+    patch: ["Applying the fix", "Then the whole notebook runs again."],
+    install: ["Installing packages", ""],
+    time_machine: ["Time Machine: rebuilding the original environment", "Nemotron works out the Python and library versions the notebook was written for."],
+    reconstruct_start: ["Time Machine: rebuilding the original environment", "Nemotron works out the Python and library versions the notebook was written for."],
+    reconstruct_env: ["Time Machine: installing the old environment", "An old Python and old library versions, then the untouched original runs there."],
+  };
+  function phase(e) {
+    if (e.type === "run_start") {
+      setStatus(e.round === 0 ? "Running the notebook on today’s libraries" : `Running the notebook with fix ${e.round}`, "Cell by cell, in an isolated environment.");
+    } else if (e.type === "run_result" && !e.ok) {
+      setStatus("Researching the error", "Searching the web for the change behind it.");
+    } else if (e.type === "run_result" && e.ok) {
+      setStatus("Checking every output", "Comparing each cell with the reference.");
+    } else if (e.type === "compare" && !e.verified && !e.unverifiable) {
+      setStatus("Outputs differ: looking for the cause", "A fix that changes the numbers is sent back.");
+    } else if (e.type === "reconstruct_result") {
+      setStatus(e.ok ? "Running the notebook on today’s libraries" : "Time Machine: trying another environment", "");
+    } else if (PHASE[e.type]) {
+      setStatus(...PHASE[e.type]);
+    }
+  }
+
   function handle(e) {
+    if (!$("status").hidden && state.live) phase(e);
     switch (e.type) {
       case "notebook":
         renderNotebook(e.cells);
@@ -661,7 +801,7 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
         break;
       }
       case "done": {
-        stopThinking();
+        stopThinking(); hideStatus();
         const [kind, mark, baseTitle] = OUTCOME[e.outcome] || ["bad", "!", e.outcome];
         const title = (e.reference === "reconstructed" && OUTCOME_RECONSTRUCTED[e.outcome]) || baseTitle;
         const attempts = e.attempts === 0 ? "" : e.attempts === 1 ? "1 attempt" : `${e.attempts} attempts`;
@@ -682,7 +822,7 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
         break;
       }
       case "error":
-        stopThinking();
+        stopThinking(); hideStatus();
         showVerdict("bad", "!", "The repair stopped with an error", e.message);
         break;
     }
@@ -718,10 +858,42 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
   $("tm").addEventListener("change", sampleNote);
   $("run").addEventListener("click", () => start({ sample: $("sample").value, live: false, time_machine: $("tm").checked }));
   $("live").addEventListener("click", () => start({ sample: $("sample").value, live: true, time_machine: $("tm").checked }));
-  $("file").addEventListener("change", async (ev) => {
-    const f = ev.target.files[0]; if (!f) return;
-    const text = await f.text(); ev.target.value = "";
-    start({ notebook: text, live: true, time_machine: $("tm").checked });
+  // ---------- your own notebook ----------
+  state.maxUpload = 2000000;
+  async function takeFile(f) {
+    state.upload = null;
+    $("drop").classList.remove("ready");
+    $("uploadRun").disabled = true;
+    const show = (msg, bad) => { $("fname").textContent = msg; $("fname").classList.toggle("ferr", Boolean(bad)); };
+    if (!f) { show(""); return; }
+    if (!/\.ipynb$/i.test(f.name)) { show("That is not a .ipynb file.", true); return; }
+    if (f.size > state.maxUpload) { show(`${f.name} is larger than 2 MB.`, true); return; }
+    let text;
+    try {
+      text = await f.text();
+      const nb = JSON.parse(text);
+      if (!nb || !Array.isArray(nb.cells)) throw new Error("no cells");
+      const code = nb.cells.filter((c) => c.cell_type === "code").length;
+      const outputs = nb.cells.some((c) => Array.isArray(c.outputs) && c.outputs.length);
+      show(`${f.name} · ${code} code cell${code === 1 ? "" : "s"} · ${outputs ? "has saved outputs" : "no saved outputs: the Time Machine will rebuild the original"}`);
+    } catch (_) {
+      show(`${f.name} does not look like a Jupyter notebook.`, true); return;
+    }
+    state.upload = text;
+    $("drop").classList.add("ready");
+    $("uploadRun").disabled = state.busy;
+  }
+  $("file").addEventListener("change", (ev) => takeFile(ev.target.files[0]));
+  ["dragenter", "dragover"].forEach((t) => $("drop").addEventListener(t, (ev) => { ev.preventDefault(); $("drop").classList.add("over"); }));
+  ["dragleave", "dragend", "drop"].forEach((t) => $("drop").addEventListener(t, () => $("drop").classList.remove("over")));
+  $("drop").addEventListener("drop", (ev) => {
+    ev.preventDefault();
+    const f = ev.dataTransfer && ev.dataTransfer.files[0];
+    if (f) takeFile(f);
+  });
+  $("uploadRun").addEventListener("click", () => {
+    if (!state.upload) return;
+    start({ notebook: state.upload, live: true, time_machine: false, as_of: $("asOf").value || null });
   });
   init();
 })();

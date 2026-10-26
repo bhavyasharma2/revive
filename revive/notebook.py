@@ -55,3 +55,20 @@ def has_stored_outputs(nb: NotebookNode) -> bool:
         cell.cell_type == "code" and len(cell.get("outputs", [])) > 0
         for cell in nb.cells
     )
+
+
+def expected_errors(nb: NotebookNode) -> dict[int, str]:
+    """Code cells whose saved output is an error, mapped to the exception's name.
+
+    Tutorials often show an error on purpose ("this raises a TypeError").
+    Such a cell is not broken: it must raise the same kind of error again.
+    """
+    found: dict[int, str] = {}
+    for index, cell in enumerate(nb.cells):
+        if cell.cell_type != "code":
+            continue
+        for output in cell.get("outputs", []):
+            if output.get("output_type") == "error":
+                found[index] = str(output.get("ename") or "")
+                break
+    return found

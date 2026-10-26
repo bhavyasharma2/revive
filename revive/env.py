@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Callable, Optional, Sequence
 
 from .patches import PatchParseError, validate_pip_spec
+from .sandbox import kernel_argv, make_traversable
 
 KERNEL_NAME = "revive-env"
 PIP_TIMEOUT_S = 900
@@ -92,7 +93,7 @@ class NotebookEnv:
         spec_dir = self.kernel_dir / KERNEL_NAME
         spec_dir.mkdir(parents=True, exist_ok=True)
         spec = {
-            "argv": [str(self.python), "-m", "ipykernel_launcher", "-f", "{connection_file}"],
+            "argv": kernel_argv(self.python),
             "display_name": "Revive sandbox",
             "language": "python",
         }
@@ -118,6 +119,7 @@ class NotebookEnv:
         from jupyter_client.kernelspec import KernelSpecManager
         from jupyter_client.manager import AsyncKernelManager
 
+        make_traversable(self.root)  # a sandboxed kernel must be able to reach this python
         ksm = KernelSpecManager(kernel_dirs=[str(self.kernel_dir)])
         return AsyncKernelManager(kernel_name=KERNEL_NAME, kernel_spec_manager=ksm)
 

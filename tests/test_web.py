@@ -95,7 +95,9 @@ def read_events(client, job_id):
 def test_index_and_config(client):
     page = client.get("/")
     assert page.status_code == 200 and "Revive" in page.text
-    assert client.get("/api/config").json() == {"allow_uploads": False, "live_enabled": True}
+    config = client.get("/api/config").json()
+    assert config["allow_uploads"] is False and config["live_enabled"] is True
+    assert config["max_upload_bytes"] == 2_000_000 and config["sandboxed"] in (True, False)
     assert client.get("/healthz").json() == {"ok": True}
 
 
@@ -277,3 +279,32 @@ def test_head_requests_for_uptime_monitors():
     for path in ("/", "/healthz"):
         assert client.head(path).status_code == 200
         assert client.get(path).status_code == 200
+
+
+def test_upload_date_is_validated(monkeypatch):
+    from fastapi.testclient import TestClient
+    from revive.web.app import create_app
+
+    monkeypatch.setenv("REVIVE_ALLOW_UPLOADS", "1")
+    monkeypatch.delenv("REVIVE_SANDBOX_USER", raising=False)
+    client = TestClient(create_app(repair=lambda nb, emit, options: None))
+    nb = '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}'
+    res = client.post("/api/jobs", json={"notebook": nb, "live": True, "as_of": "21/05/2021"})
+    assert res.status_code == 400 and "last changed date" in res.json()["detail"]
+
+
+def test_no_api_key_means_replays_only(monkeypatch):
+    from fastapi.testclient import TestClient
+    from revive.web.app import create_app
+
+    monkeypatch.delenv("NEBIUS_API_KEY", raising=False)
+    monkeypatch.setenv("REVIVE_ALLOW_UPLOADS", "1")
+    monkeypatch.delenv("REVIVE_SANDBOX_USER", raising=False)
+    client = TestClient(create_app())  # the real repair function, which needs the key
+    config = client.get("/api/config").json()
+    assert config["live_enabled"] is False and config["allow_uploads"] is False
+    assert client.post("/api/jobs", json={"sample": "legacy_churn_model", "live": True}).status_code == 403
+    assert client.post("/api/jobs", json={"sample": "legacy_churn_model"}).status_code == 201  # replay still works
+
+    monkeypatch.setenv("NEBIUS_API_KEY", "test-key")
+    assert TestClient(create_app()).get("/api/config").json()["live_enabled"] is True
