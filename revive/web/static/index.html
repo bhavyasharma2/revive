@@ -135,14 +135,17 @@ h1 em { font-style: normal; color: var(--ok); }
 .pick span.d { font-size: 14px; color: var(--muted); }
 .pick .go { font-size: 13px; font-weight: 600; margin-top: 4px; }
 
-.tmx { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 2fr); gap: 8px 28px; padding: 18px 20px; border: 1px solid var(--line); border-left: 3px solid var(--time); border-radius: var(--radius); background: var(--panel); scroll-margin-top: 12px; }
+.tmx { margin-top: 32px; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 2fr); gap: 16px 36px; padding: 26px 28px; border: 0; border-radius: var(--radius); background: var(--time-soft); scroll-margin-top: 12px; }
 .tmx .tag { font: 500 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--time); }
-.tmx-head p { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.tmx-head h3 { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; font-size: 22px; letter-spacing: -.01em; color: var(--ink); }
+.tmx-head h3 svg { flex: none; color: var(--time); }
+.tmx-head p { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
 .tmx-head em { font-style: normal; color: var(--ink); font-weight: 600; }
-.tmx-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; counter-reset: tmx; }
-.tmx-steps li { counter-increment: tmx; display: grid; gap: 4px; align-content: start; }
-.tmx-steps b { font-size: 14px; }
-.tmx-steps b::before { content: counter(tmx, decimal-leading-zero) "  "; font: 500 11px var(--mono); color: var(--time); }
+.tmx-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; counter-reset: tmx; align-self: center; }
+.tmx-steps li { counter-increment: tmx; position: relative; display: grid; gap: 6px; align-content: start; padding: 0 18px 0 0; }
+.tmx-steps li::before { content: counter(tmx); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--time); color: var(--time-soft); font: 600 13px/1 var(--mono); position: relative; z-index: 1; }
+.tmx-steps li:not(:last-child)::after { content: ""; position: absolute; top: 14px; left: 28px; right: 0; border-top: 2px dashed var(--time); opacity: .45; }
+.tmx-steps b { font-size: 15px; margin-top: 6px; color: var(--ink); }
 .tmx-steps span { font-size: 13px; color: var(--muted); }
 .tm-toggle a { color: var(--time); text-underline-offset: 2px; }
 .more { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
@@ -312,7 +315,12 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
   .wrap { padding: 0 16px; }
   .own-grid, .scope, .tmx, .tmx-steps, .checks { grid-template-columns: 1fr; }
   .checks-col + .checks-col { border-left: 0; border-top: 1px solid var(--line); }
-  .tmx-steps { gap: 12px; }
+  .tmx-steps { gap: 16px; }
+  .tmx { padding: 20px; }
+  .tmx-steps li { padding: 0 0 0 40px; }
+  .tmx-steps li::before { position: absolute; left: 0; top: 0; }
+  .tmx-steps li:not(:last-child)::after { top: 30px; bottom: -14px; left: 13px; right: auto; border-top: 0; border-left: 2px dashed var(--time); }
+  .tmx-steps b { margin-top: 3px; }
   .scope > div + div { border-left: 0; border-top: 1px solid var(--line); }
   .drop { min-height: 140px; }
   .own-row .btn { width: 100%; }
@@ -405,7 +413,8 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
 
     <div class="tmx" id="timeMachine" aria-labelledby="tmxTitle">
       <div class="tmx-head">
-        <span class="tag" id="tmxTitle">The Time Machine</span>
+        <span class="tag">How Revive checks a notebook with no outputs</span>
+        <h3 id="tmxTitle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>The Time Machine</h3>
         <p>Many notebooks are shared without their outputs. Then nobody knows what the numbers <em>should</em> be, and a fix that quietly changes them looks fine.</p>
       </div>
       <ol class="tmx-steps">
