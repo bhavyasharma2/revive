@@ -134,3 +134,31 @@ def test_ordinary_fixes_are_not_flagged():
     original = _nb(_code("display('pd.concat([df1, df2])')", stdout="pd.concat([df1, df2])\n"), _code("display('df1.append(df2)')"))
     patched = _nb(_code("display('pd.concat([df1, df2])')"), _code("display('pd.concat([df1, df2])')"))
     assert gaming_reasons(original, original, patched, original) == []
+
+
+# ---------- plots (Raschka, Python Machine Learning, ch11) ----------
+
+def test_old_matplotlib_figure_text_is_not_compared():
+    # Saved before matplotlib 2.0: the figure's text stand-in was "<matplotlib.figure.Figure at 0x...>".
+    # Today plt.show() leaves "<Figure size 640x480 with 1 Axes>" or nothing; plots are not compared.
+    fig_old = nbformat.v4.new_output(
+        "display_data", data={"image/png": "AAAA", "text/plain": "<matplotlib.figure.Figure at 0x7f1c2b3d4e50>"}
+    )
+    fig_new = nbformat.v4.new_output("display_data", data={"image/png": "BBBB", "text/plain": "<Figure size 640x480 with 1 Axes>"})
+    original = _nb(_code("plt.scatter(x, y)\nplt.show()"), _code("print(1)", stdout="1\n"))
+    original.cells[0].outputs = [fig_old]
+    for outputs in ([], [fig_new]):
+        executed = _nb(_code("plt.scatter(x, y)\nplt.show()"), _code("print(1)", stdout="1\n"))
+        executed.cells[0].outputs = outputs
+        report = compare_notebooks(original, executed)
+        assert report.cells[0].status == Status.SKIPPED
+        assert report.verified
+
+
+def test_replacing_plt_show_with_a_figure_expression_is_rejected():
+    before = "plt.scatter(x, y)\nplt.tight_layout()\nplt.show()"
+    for last in ("plt.gcf()", "fig = plt.gcf(); fig", "fig = plt.figure(); fig", "plt.figure()"):
+        reasons = _gaming(before, before.replace("plt.show()", last))
+        assert any("plt.show()" in r for r in reasons), last
+    # Changing other lines of a plotting cell is fine.
+    assert _gaming(before, before.replace("plt.scatter(x, y)", "plt.scatter(x, y, c='r')")) == []

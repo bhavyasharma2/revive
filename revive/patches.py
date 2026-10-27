@@ -350,6 +350,10 @@ _STRING_RE = re.compile(r"""(?:[rRbBuUfF]{0,2})(?:'((?:[^'\\\n]|\\.)*)'|"((?:[^"
 MIN_PASTED_CHARS = 4
 
 
+# A line whose value is a figure, e.g. "plt.gcf()" or "fig = plt.figure(); fig".
+_FIGURE_EXPR_RE = re.compile(r"^\s*(?:\w+\s*=\s*)?(?:plt|pyplot)\.(?:gcf|figure)\([^)]*\)\s*(?:;\s*\w+\s*)?$", re.M)
+
+
 def gaming_reasons(original: NotebookNode, before: NotebookNode, after: NotebookNode, reference: NotebookNode) -> list[str]:
     """Why a patch looks like it fakes the output check rather than fixing the code.
 
@@ -376,6 +380,11 @@ def gaming_reasons(original: NotebookNode, before: NotebookNode, after: Notebook
                 break
         if _LIBRARY_SUBCLASS_RE.search(added) and not _LIBRARY_SUBCLASS_RE.search(old):
             reasons.append(f"cell {index} subclasses a library type to bring back old behaviour; change the call itself")
+        if "plt.show()" in old and "plt.show()" not in after.cells[index].source and _FIGURE_EXPR_RE.search(added):
+            reasons.append(
+                f"cell {index} replaces plt.show() with an expression that only prints a figure object; "
+                "plots are not compared, so keep plt.show()"
+            )
         if _MONKEY_PATCH_RE.search(added):
             reasons.append(f"cell {index} re-attaches a method to an object (monkey-patching); change the call itself")
         for match in _STRING_RE.finditer(added):

@@ -37,9 +37,12 @@ _VOLATILE_LINE_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Plots are not compared, and a figure's text stand-in ("<Figure size 576x288 with 1 Axes>")
-# changes with matplotlib's default resolution, not with the result.
-_FIGURE_LINE_RE = re.compile(r"^<Figure size [\d.]+x[\d.]+ with \d+ Axes>$")
+# Plots are not compared, and a figure's text stand-in changes with the matplotlib
+# version and its default resolution, not with the result: "<Figure size 576x288 with 1 Axes>"
+# today, "<matplotlib.figure.Figure at 0x7f...>" before matplotlib 2.0 (addresses are already 0xADDR here).
+_FIGURE_LINE_RE = re.compile(
+    r"^<(?:Figure size [\d.]+x[\d.]+ with \d+ Axes|matplotlib\.figure\.Figure at 0xADDR)>$"
+)
 
 # Formatting that libraries changed without changing any value. Each pair maps an
 # old or new spelling to one canonical form; numbers are never touched.
