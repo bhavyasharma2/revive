@@ -212,6 +212,10 @@ The tests start real Jupyter kernels, create real isolated environments and (whe
 - **Hugging Face Spaces (Docker Spaces need a PRO account):** `pip install huggingface_hub`, set `HF_TOKEN`, `NEBIUS_API_KEY` and `TAVILY_API_KEY`, then run `python scripts/deploy_huggingface.py --github <repo url>`. Keys are stored as encrypted Space secrets.
 - **Any container host, including Nebius Serverless Endpoints:** `docker build -t revive .` then run it with `NEBIUS_API_KEY` and `TAVILY_API_KEY` set; it listens on `$PORT` (default 7860). The image ships with Python 3.8 and 3.10 for the Time Machine.
 
+### Checking a notebook before it runs
+
+Real notebooks often depend on things outside the .ipynb file: a CSV next to it, an image it displays, a helper module, a deep-learning framework. `revive/preflight.py` reads the notebook (without running it) and reports what would stop a repair: files it reads that are missing (from calls like `pd.read_csv("data/train.csv")` or `Image(filename="images/a.png")`), absolute paths from the author's computer, unsupported frameworks, modules that are not installed, downloads, and cells that only report versions. In the web app this runs as soon as a notebook is chosen; missing files can be added (each is placed where the notebook expects it, e.g. `11_05.png` goes to `images/11_05.png`), and the repair button stays off until nothing blocks it, so no time or credits are spent on a run that cannot succeed. The command line prints the same check as a warning.
+
 ### Uploaded notebooks and the sandbox
 
 Visitors to the hosted demo can upload their own notebook. Executing a notebook runs its code, and the server's environment holds the Token Factory and Tavily keys, so uploaded code never runs as the server's user. Every kernel (including the Time Machine's) is started through `revive/sandbox.py`, which hands the kernel its connection file and then drops to the unprivileged `sandbox` user with a minimal environment and limits on processes and file sizes. The kernel cannot see the server's environment variables or read them from `/proc` (owned by root), cannot modify Revive's code or the environments it installs packages into, and can only write to its own working folder, which is deleted after the repair. Jupyter must still be able to interrupt and stop the kernel, and some hosts (Render among them) take away root's right to signal other users' processes. So the process Jupyter starts is a small supervisor: it keeps root only as its saved user id (which lets the server signal it), passes every signal on to the kernel, and the kernel is killed if the supervisor dies. At startup Revive checks that all of this works on the host; if it does not, uploads switch themselves off. `tests/test_sandbox.py` runs a notebook that tries to read the keys, change Revive and outlive its time limit, and checks that it cannot; GitHub Actions runs it as root on every push, both normally and without that signalling right.
@@ -226,6 +230,7 @@ Visitors to the hosted demo can upload their own notebook. Executing a notebook 
 | `revive/timemachine.py` | Infers, builds (with uv) and runs the notebook's original environment |
 | `revive/patches.py` | The patch format and its checks: strict allowlist for pip requirements, exact unique snippets, syntax check |
 | `revive/env.py` | Isolated per-notebook environments layered on the host environment |
+| `revive/preflight.py` | Reads a notebook before it runs and reports what would stop a repair (missing data files, unsupported frameworks, absolute paths) |
 | `revive/sandbox.py` | Starts notebook kernels as an unprivileged user so uploaded code cannot read the server's secrets |
 | `revive/llm.py`, `revive/search.py` | Token Factory and Tavily clients |
 | `revive/web/` | FastAPI app with live event streaming, replay cache and usage limits |
@@ -237,7 +242,7 @@ Visitors to the hosted demo can upload their own notebook. Executing a notebook 
 - **Old environments need wheels.** The Time Machine supports Python 3.8 to 3.12; notebooks that need libraries without wheels for those Pythons cannot be rebuilt.
 - **Randomness without a seed** looks like drift, because the numbers really do change between runs. Revive reports it rather than hiding it.
 - **Plots are not compared.** Only text output is checked; images vary byte-for-byte between library versions.
-- **Uploaded notebooks must be self-contained** (no data files of their own), run on a CPU, and use NumPy, pandas, SciPy or scikit-learn. Deep-learning frameworks, GPUs and plot comparison are next.
+- **Uploaded notebooks** must run on a CPU and use NumPy, pandas, SciPy or scikit-learn; the data files they read can be uploaded with them (up to 15 MB). Deep-learning frameworks, GPUs and plot comparison are next. Cells that only print library versions or the date are run but not compared, since they can never match.
 - **The sandbox protects secrets, not the network.** Uploaded code runs as an unprivileged user without access to the API keys, but it can still make network requests and use the CPU until its time limit. Run anything you do not trust locally inside a container.
 - **The benchmark is synthetic**, written for this project. Its outputs are authentic and its breaks are real, documented API changes, but real-world notebooks are messier.
 

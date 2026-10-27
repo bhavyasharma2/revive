@@ -12,6 +12,7 @@ from .agent import Outcome, ReviveAgent
 from .env import EnvError, NotebookEnv
 from .llm import MissingAPIKey, TokenFactoryClient
 from .notebook import has_stored_outputs, load_notebook, save_notebook
+from .preflight import check as preflight_check
 from .search import TavilyClient, TavilyError
 from .timemachine import git_last_changed, validate_date
 
@@ -122,6 +123,20 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[time machine] last git commit of this notebook: {as_of}")
 
     nb = load_notebook(args.notebook)
+
+    # Read-only check of what could stop the repair. Files next to the notebook count as provided.
+    folder = args.notebook.resolve().parent
+    first = preflight_check(nb)
+    report = preflight_check(nb, [p for p in first.needed_files if (folder / p).exists()])
+    for finding in report.findings:
+        if finding.level not in ("block", "warn"):
+            continue
+        label = "[problem]" if finding.level == "block" else "[warning]"
+        paths = f": {', '.join(finding.paths)}" if finding.paths else ""
+        print(f"{label} {finding.message}{paths}")
+    if not report.ok:
+        print("[warning] the repair will probably fail until the problems above are fixed")
+
     if not has_stored_outputs(nb):
         if args.time_machine == "off":
             print("[warning] this notebook has no saved outputs, so a fix can be run but not verified")

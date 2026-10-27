@@ -435,6 +435,21 @@ def _explain_own_code(stored: str, fresh: str, old_source: str, new_source: str,
     return "; ".join(f"the notebook prints its own code, which the fix changed: {o!r} -> {n!r}" for o, n in pairs)
 
 
+# ---------- cells that only report the environment ----------
+# A cell such as "%watermark -v -p numpy" prints library versions and the date. It
+# describes the machine, not a result, and can never match on a newer setup.
+_ENV_REPORT_LINE_RE = re.compile(
+    r"^\s*(?:%load_ext\s+watermark\b|%watermark\b|%version_information\b|%load_ext\s+version_information\b"
+    r"|!\s*(?:pip|conda)\s+(?:freeze|list)\b|!\s*python3?\s+(?:-V|--version)\b|!\s*nvidia-smi\b)"
+)
+
+
+def environment_report(source: str) -> bool:
+    """True when every line of a cell only reports versions, the date or the hardware."""
+    lines = [line for line in source.splitlines() if line.strip() and not line.strip().startswith("#")]
+    return bool(lines) and all(_ENV_REPORT_LINE_RE.match(line) for line in lines)
+
+
 def _error_name(cell: Any) -> str:
     for output in cell.get("outputs", []):
         if output.get("output_type") == "error":
@@ -473,7 +488,9 @@ def compare_notebooks(
         has_fresh = bool(normalize_text(fresh))
 
         stored_error, fresh_error = _error_name(before), _error_name(after)
-        if stored_error and fresh_error != stored_error:
+        if environment_report(before.source):
+            status, rel, detail = Status.SKIPPED, 0.0, "reports versions and the date, not a result; not compared"
+        elif stored_error and fresh_error != stored_error:
             status, rel, detail = Status.CHANGED, 0.0, (
                 f"the original raised {stored_error} here; the re-run "
                 + (f"raised {fresh_error}" if fresh_error else "raised nothing")

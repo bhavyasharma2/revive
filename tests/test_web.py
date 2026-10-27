@@ -288,7 +288,11 @@ def test_upload_date_is_validated(monkeypatch):
     monkeypatch.setenv("REVIVE_ALLOW_UPLOADS", "1")
     monkeypatch.delenv("REVIVE_SANDBOX_USER", raising=False)
     client = TestClient(create_app(repair=lambda nb, emit, options: None))
-    nb = '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}'
+    import nbformat
+
+    notebook = nbformat.v4.new_notebook()
+    notebook.cells = [nbformat.v4.new_code_cell("print(1)")]
+    nb = nbformat.writes(notebook)
     res = client.post("/api/jobs", json={"notebook": nb, "live": True, "as_of": "21/05/2021"})
     assert res.status_code == 400 and "last changed date" in res.json()["detail"]
 

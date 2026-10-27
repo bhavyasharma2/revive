@@ -31,10 +31,19 @@ _STDLIB_SKIP = {
 }
 
 
+# IPython extensions loaded with %load_ext are packages too (e.g. %load_ext watermark).
+_LOAD_EXT_RE = re.compile(r"^\s*%load_ext\s+([A-Za-z_][\w.]*)", re.M)
+_BUILTIN_EXTENSIONS = {"autoreload", "storemagic"}
+
+
 def imported_modules(sources: Iterable[str]) -> list[str]:
-    """Top-level module names imported anywhere in the given sources, in first-seen order."""
+    """Top-level module names imported (or loaded as IPython extensions) anywhere in the given sources, in first-seen order."""
     found: list[str] = []
     for source in sources:
+        for match in _LOAD_EXT_RE.finditer(source):
+            top = match.group(1).split(".")[0]
+            if top not in _BUILTIN_EXTENSIONS and top not in found:
+                found.append(top)
         for match in _IMPORT_RE.finditer(source):
             names = match.group(1) or match.group(2)
             for name in re.split(r"\s*,\s*", names):

@@ -184,6 +184,28 @@ h1 em { font-style: normal; color: var(--ok); }
 .date { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
 .date input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .date .opt { color: var(--muted); font-size: 13px; }
+.checks { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.checks[hidden] { display: none; }
+.checks-col { padding: 16px 18px; min-width: 0; }
+.checks-col + .checks-col { border-left: 1px solid var(--line); }
+.checks h4 { margin: 0 0 10px; font: 500 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; }
+.check-state { font: 600 12px var(--sans); letter-spacing: 0; text-transform: none; }
+.check-state.ok { color: var(--ok); } .check-state.bad { color: var(--bad); }
+.findings, .file-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 14px; }
+.findings li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; }
+.findings li::before { font-weight: 700; text-align: center; }
+.findings .block::before { content: "✕"; color: var(--bad); }
+.findings .warn::before { content: "!"; color: var(--warn); }
+.findings .info::before { content: "i"; color: var(--faint); font-family: var(--mono); }
+.findings .good::before { content: "✓"; color: var(--ok); }
+.findings code, .file-list code { font: 12px var(--mono); overflow-wrap: anywhere; }
+.file-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 6px; background: var(--code-bg); }
+.file-list .st { font-size: 12px; font-weight: 600; }
+.file-list .missing .st { color: var(--bad); } .file-list .added .st { color: var(--ok); }
+.file-list button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 2px; }
+.checks .hint { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+.btn.small { padding: 5px 10px; font-size: 13px; text-transform: none; letter-spacing: 0; font-family: var(--sans); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .privacy { margin: 10px 2px 0; font-size: 13px; color: var(--muted); }
 
 /* ---------- results ---------- */
@@ -288,7 +310,8 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
 }
 @media (max-width: 720px) {
   .wrap { padding: 0 16px; }
-  .own-grid, .scope, .tmx, .tmx-steps { grid-template-columns: 1fr; }
+  .own-grid, .scope, .tmx, .tmx-steps, .checks { grid-template-columns: 1fr; }
+  .checks-col + .checks-col { border-left: 0; border-top: 1px solid var(--line); }
   .tmx-steps { gap: 12px; }
   .scope > div + div { border-left: 0; border-top: 1px solid var(--line); }
   .drop { min-height: 140px; }
@@ -412,7 +435,7 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
       <label class="drop" id="drop">
         <input type="file" id="file" accept=".ipynb,application/json" aria-describedby="dropHint">
         <strong>Drop a .ipynb file here</strong>
-        <span id="dropHint">or click to choose one · up to 2 MB</span>
+        <span id="dropHint">or click to choose one · up to 2 MB · you can drop its data files with it</span>
         <span class="fname" id="fname"></span>
       </label>
       <div class="scope">
@@ -420,7 +443,7 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
           <h4>Works today</h4>
           <ul>
             <li>NumPy, pandas, SciPy and scikit-learn</li>
-            <li>Self-contained: data is generated or built in (no files of your own)</li>
+            <li>Data files it reads (CSV, images, helper .py files): add them with the notebook</li>
             <li>Runs on a CPU in a few minutes</li>
             <li>With saved outputs, or without: the Time Machine rebuilds the original</li>
           </ul>
@@ -430,9 +453,23 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
           <ul>
             <li>Checking plots, not only printed output</li>
             <li>PyTorch, TensorFlow and GPU notebooks</li>
-            <li>Notebooks that read your data files</li>
+            <li>Notebooks that read from databases or cloud storage</li>
           </ul>
         </div>
+      </div>
+    </div>
+    <div class="checks" id="checks" hidden aria-live="polite">
+      <div class="checks-col">
+        <h4>Before it runs <span id="checkState" class="check-state"></span></h4>
+        <ul class="findings" id="findings"></ul>
+      </div>
+      <div class="checks-col">
+        <h4>Data files
+          <label class="btn secondary small" for="dataFiles">Add files</label>
+          <input type="file" id="dataFiles" class="vh" multiple>
+        </h4>
+        <ul class="file-list" id="fileList"></ul>
+        <p class="hint">Files the notebook reads: CSVs, images, helper .py files. Each is placed where the notebook expects it. Up to 15 MB in total.</p>
       </div>
     </div>
     <div class="own-row">
@@ -546,7 +583,7 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
     ["run", "live", "sample", "tm"].forEach((id) => { $(id).disabled = busy; });
     document.querySelectorAll(".pick").forEach((b) => { b.disabled = busy; });
     $("file").disabled = busy;
-    $("uploadRun").disabled = busy || !state.upload;
+    $("uploadRun").disabled = busy || !(state.upload && state.preflight && state.preflight.ok);
   }
 
   function markPick(name) {
@@ -886,8 +923,93 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
   $("live").addEventListener("click", () => start({ sample: $("sample").value, live: true, time_machine: $("tm").checked }));
   // ---------- your own notebook ----------
   state.maxUpload = 2000000;
+  state.dataFiles = [];  // [{file, path}]: data files placed next to the notebook
+  state.preflight = null;
+  const baseName = (p) => p.split("/").pop();
+
+  // Put a data file where the notebook expects it: "11_05.png" goes to "images/11_05.png" if the notebook reads that.
+  function targetPath(name) {
+    const needed = (state.preflight && state.preflight.needed_files) || [];
+    const taken = new Set(state.dataFiles.map((d) => d.path));
+    const match = needed.find((p) => baseName(p).toLowerCase() === name.toLowerCase() && !taken.has(p));
+    return match || name;
+  }
+
+  function addDataFiles(files) {
+    for (const file of files) {
+      if (/\.ipynb$/i.test(file.name)) continue;
+      const path = targetPath(file.name);
+      state.dataFiles = state.dataFiles.filter((d) => d.path !== path);
+      state.dataFiles.push({ file, path });
+    }
+    runPreflight();
+  }
+
+  function removeDataFile(path) {
+    state.dataFiles = state.dataFiles.filter((d) => d.path !== path);
+    runPreflight();
+  }
+
+  function renderPreflight() {
+    const pf = state.preflight;
+    $("checks").hidden = !state.upload;
+    if (!pf) return;
+    const items = pf.findings.length ? pf.findings : [{ level: "good", message: "Nothing found that would stop it.", paths: [] }];
+    $("findings").innerHTML = items.map((f) => {
+      const shown = f.level === "block" && pf.missing_files.length && f.paths.length && f.paths.every((p) => pf.missing_files.includes(p))
+        ? "" : (f.paths.length ? ` ${f.paths.map((p) => `<code>${esc(p)}</code>`).join(", ")}` : "");
+      return `<li class="${esc(f.level)}"><span>${esc(f.message)}${shown}</span></li>`;
+    }).join("");
+    const state_ = $("checkState");
+    state_.textContent = pf.ok ? "ready" : "needs attention";
+    state_.className = `check-state ${pf.ok ? "ok" : "bad"}`;
+    const rows = [];
+    for (const p of pf.missing_files) rows.push(`<li class="missing"><code>${esc(p)}</code><span class="st">missing</span></li>`);
+    for (const d of state.dataFiles) {
+      rows.push(`<li class="added"><code>${esc(d.path)}</code><span><span class="st">added</span> <button type="button" data-remove="${esc(d.path)}" aria-label="Remove ${esc(d.path)}">×</button></span></li>`);
+    }
+    $("fileList").innerHTML = rows.join("") || '<li><span class="hint" style="margin:0">None needed.</span></li>';
+    $("fileList").querySelectorAll("[data-remove]").forEach((b) => b.addEventListener("click", () => removeDataFile(b.dataset.remove)));
+    $("uploadRun").disabled = state.busy || !pf.ok;
+  }
+
+  async function runPreflight() {
+    if (!state.upload) { renderPreflight(); return; }
+    const ticket = (state.preflightTicket = (state.preflightTicket || 0) + 1);
+    $("uploadRun").disabled = true;
+    try {
+      const pf = await api("/api/preflight", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notebook: state.upload, files: state.dataFiles.map((d) => d.path) }),
+      });
+      if (ticket !== state.preflightTicket) return;
+      state.preflight = pf;
+      // Files added before the check knew where they belong: move them now.
+      let moved = false;
+      for (const d of state.dataFiles) {
+        if (pf.missing_files.includes(d.path) || pf.needed_files.includes(d.path)) continue;
+        const better = pf.missing_files.find((p) => baseName(p).toLowerCase() === d.file.name.toLowerCase());
+        if (better) { d.path = better; moved = true; }
+      }
+      if (moved) { runPreflight(); return; }
+    } catch (e) {
+      state.preflight = { ok: false, findings: [{ level: "block", message: e.message, paths: [] }], needed_files: [], missing_files: [] };
+    }
+    renderPreflight();
+  }
+
+  function asBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",", 2)[1] || "");
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function takeFile(f) {
     state.upload = null;
+    state.preflight = null;
     $("drop").classList.remove("ready");
     $("uploadRun").disabled = true;
     const show = (msg, bad) => { $("fname").textContent = msg; $("fname").classList.toggle("ferr", Boolean(bad)); };
@@ -907,19 +1029,32 @@ pre { margin: 0; font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break:
     }
     state.upload = text;
     $("drop").classList.add("ready");
-    $("uploadRun").disabled = state.busy;
+    runPreflight();
   }
   $("file").addEventListener("change", (ev) => takeFile(ev.target.files[0]));
+  $("dataFiles").addEventListener("change", (ev) => { addDataFiles([...ev.target.files]); ev.target.value = ""; });
   ["dragenter", "dragover"].forEach((t) => $("drop").addEventListener(t, (ev) => { ev.preventDefault(); $("drop").classList.add("over"); }));
   ["dragleave", "dragend", "drop"].forEach((t) => $("drop").addEventListener(t, () => $("drop").classList.remove("over")));
-  $("drop").addEventListener("drop", (ev) => {
+  $("drop").addEventListener("drop", async (ev) => {
     ev.preventDefault();
-    const f = ev.dataTransfer && ev.dataTransfer.files[0];
-    if (f) takeFile(f);
+    const files = [...((ev.dataTransfer && ev.dataTransfer.files) || [])];
+    const nb = files.find((f) => /\.ipynb$/i.test(f.name));
+    const data = files.filter((f) => f !== nb);
+    if (nb) await takeFile(nb);
+    if (data.length) addDataFiles(data);
   });
-  $("uploadRun").addEventListener("click", () => {
-    if (!state.upload) return;
-    start({ notebook: state.upload, live: true, time_machine: false, as_of: $("asOf").value || null });
+  $("uploadRun").addEventListener("click", async () => {
+    if (!state.upload || !(state.preflight && state.preflight.ok)) return;
+    const limit = state.config.max_data_bytes || 15000000;
+    const total = state.dataFiles.reduce((n, d) => n + d.file.size, 0);
+    if (total > limit) { showVerdict("bad", "!", "The data files are too large", `They add up to ${(total / 1e6).toFixed(1)} MB; the limit is ${Math.round(limit / 1e6)} MB.`); return; }
+    let files = {};
+    try {
+      for (const d of state.dataFiles) files[d.path] = await asBase64(d.file);
+    } catch (e) {
+      showVerdict("bad", "!", "Could not read a data file", e.message || String(e)); return;
+    }
+    start({ notebook: state.upload, files, live: true, time_machine: false, as_of: $("asOf").value || null });
   });
   init();
 })();

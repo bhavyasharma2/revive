@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import tempfile
 import time
 from pathlib import Path
@@ -27,6 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response, StreamingRes
 from pydantic import BaseModel
 
 from .. import sandbox
+from .. import preflight
 from ..notebook import load_notebook, loads_notebook
 from ..timemachine import validate_date
 from .jobs import CachedRun, JobManager, LimitExceeded, RateLimiter, RepairFn
@@ -41,6 +43,9 @@ MANIFEST = ROOT / "benchmark" / "manifest.json"
 # public notebooks (benchmark/real/) come after the benchmark's own.
 SAMPLE_SETS = (ROOT / "benchmark", ROOT / "benchmark" / "real")
 MAX_UPLOAD_BYTES = 2_000_000
+# Data files sent with an uploaded notebook (CSVs, images, helper modules).
+MAX_DATA_FILES = 30
+MAX_DATA_BYTES = 15_000_000
 SSE_POLL_S = 0.2
 SSE_KEEPALIVE_S = 15.0
 
@@ -73,6 +78,7 @@ def default_repair() -> RepairFn:
         with tempfile.TemporaryDirectory(prefix="revive-web-") as tmp:
             # The notebook may write files in work/; the environment in venv/ stays out of its reach.
             work = sandbox.make_workdir(Path(tmp) / "work")
+            write_data_files(work, options.get("files") or {})
             env = NotebookEnv.create(Path(tmp) / "venv")
             agent = ReviveAgent(
                 llm,
@@ -90,6 +96,49 @@ def default_repair() -> RepairFn:
         return result, llm.usage
 
     return repair
+
+
+def decode_data_files(files: dict[str, str]) -> dict[str, bytes]:
+    """Validate and decode {relative path: base64 content}; raises HTTPException with a plain reason."""
+    import base64
+    import binascii
+
+    if len(files) > MAX_DATA_FILES:
+        raise HTTPException(413, f"at most {MAX_DATA_FILES} data files can be added")
+    decoded: dict[str, bytes] = {}
+    total = 0
+    for raw_path, content in files.items():
+        path = preflight.normalize_path(str(raw_path))
+        if path is None or not all(re.fullmatch(r"[\w.\- ()]+", part) for part in path.split("/")):
+            raise HTTPException(400, f"not a usable file name: {raw_path!r} (use a name like data/train.csv)")
+        if path in decoded:
+            raise HTTPException(400, f"the file {path} was added twice")
+        try:
+            data = base64.b64decode(content, validate=True)
+        except (binascii.Error, ValueError, TypeError) as exc:
+            raise HTTPException(400, f"could not read the file {path}") from exc
+        total += len(data)
+        if total > MAX_DATA_BYTES:
+            raise HTTPException(413, f"data files may add up to {MAX_DATA_BYTES // 1_000_000} MB")
+        decoded[path] = data
+    return decoded
+
+
+def write_data_files(work: Path, files: dict[str, bytes]) -> None:
+    """Place uploaded data files next to the notebook, in the folders its code expects."""
+    root = work.resolve()
+    for path, data in files.items():
+        target = (root / path).resolve()
+        if root not in target.parents:  # decode_data_files already refuses this; never write outside work/
+            raise ValueError(f"refusing to write outside the working folder: {path}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if sandbox.active():
+            for folder in [target.parent, *target.parent.parents]:
+                if folder == root:
+                    break
+                os.chmod(folder, 0o777)  # the notebook may write next to its data, like it would at home
+        target.write_bytes(data)
+        os.chmod(target, 0o644)
 
 
 def load_manifest() -> list[dict]:
@@ -144,6 +193,12 @@ class JobRequest(BaseModel):
     live: bool = False
     time_machine: bool = False  # force the Time Machine even when outputs are saved
     as_of: Optional[str] = None  # uploads: when the notebook was last changed (YYYY-MM-DD), for the Time Machine
+    files: Optional[dict[str, str]] = None  # uploads: data files, {relative path: base64 content}
+
+
+class PreflightRequest(BaseModel):
+    notebook: str
+    files: list[str] = []  # relative paths of the data files that will be added
 
 
 def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] = None) -> FastAPI:
@@ -183,6 +238,8 @@ def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] 
             "allow_uploads": allow_uploads and live_enabled,
             "live_enabled": live_enabled,
             "max_upload_bytes": MAX_UPLOAD_BYTES,
+            "max_data_files": MAX_DATA_FILES,
+            "max_data_bytes": MAX_DATA_BYTES,
             "sandboxed": sandbox.active(),
         }
 
@@ -199,6 +256,19 @@ def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] 
             })
         return out
 
+    def parse_upload(text: str):
+        if len(text.encode("utf-8")) > MAX_UPLOAD_BYTES:
+            raise HTTPException(413, "notebook is larger than 2 MB")
+        try:
+            return loads_notebook(text)
+        except Exception as exc:  # noqa: BLE001 - nbformat raises several types
+            raise HTTPException(400, f"this file is not a valid .ipynb notebook: {exc}") from exc
+
+    @app.post("/api/preflight")
+    def check_notebook(body: PreflightRequest) -> dict:
+        """What would stop a repair of this notebook, before anything runs (reads it, never executes it)."""
+        return preflight.check(parse_upload(body.notebook), body.files).to_dict()
+
     @app.post("/api/jobs")
     def create_job(body: JobRequest, request: Request) -> JSONResponse:
         if bool(body.sample) == bool(body.notebook):
@@ -211,12 +281,12 @@ def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] 
         else:
             if not allow_uploads:
                 raise HTTPException(403, "uploads are turned off on this server; pick one of the sample notebooks")
-            if len(body.notebook.encode("utf-8")) > MAX_UPLOAD_BYTES:
-                raise HTTPException(413, "notebook is larger than 2 MB")
-            try:
-                nb = loads_notebook(body.notebook)
-            except Exception as exc:  # noqa: BLE001 - nbformat raises several types
-                raise HTTPException(400, f"this file is not a valid .ipynb notebook: {exc}") from exc
+            nb = parse_upload(body.notebook)
+            data_files = decode_data_files(body.files or {})
+            check = preflight.check(nb, data_files.keys())
+            if not check.ok:
+                missing = f" Missing: {', '.join(check.missing_files)}." if check.missing_files else ""
+                raise HTTPException(400, "this notebook cannot be repaired here yet: " + " ".join(check.blockers()) + missing)
             label, key = "Uploaded notebook", None
             try:
                 upload_as_of = validate_date(body.as_of)
@@ -233,6 +303,7 @@ def create_app(repair: Optional[RepairFn] = None, *, recordings: Optional[Path] 
                 options["as_of"] = samples[body.sample].get("as_of")
             else:
                 options["as_of"] = upload_as_of
+                options["files"] = data_files
             job = manager.start(nb, label=label, client=client_id(request), cache_key=key, live=live, options=options)
         except LimitExceeded as exc:
             raise HTTPException(429, str(exc)) from exc
